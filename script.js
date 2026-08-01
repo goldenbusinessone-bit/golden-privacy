@@ -82,12 +82,14 @@ const firebaseConfig = {
 };
 
 let db = null;
-const GOLDEN_ADMIN_CODE = "GOLDEN2026"; // 🔧 change ce code secret quand tu veux, ici uniquement
+let auth = null;
+const GOLDEN_ADMIN_UID = "BRwtLvyUIkUY7Nw6RtabAbIC9ky1";
 const IMGBB_API_KEY = "e228d6ffaf60a7b3cb87c4cdafb148dd";
 
 if (firebaseConfig.apiKey !== "VOTRE_API_KEY_ICI") {
   firebase.initializeApp(firebaseConfig);
   db = firebase.firestore();
+  if (typeof firebase.auth === "function") auth = firebase.auth();
 } else {
   console.warn("Configuration Firebase manquante : les commentaires ne fonctionneront pas tant que firebaseConfig n'est pas complété.");
 }
