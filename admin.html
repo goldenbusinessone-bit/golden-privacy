@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration — Agence Golden</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="style.css">
+<style>
+  .admin-wrap{max-width:560px;margin:0 auto;padding:70px 24px 100px;}
+  .admin-lock{text-align:center;padding-top:40px;}
+  .admin-lock input{width:100%;max-width:260px;text-align:center;letter-spacing:3px;font-size:18px;padding:12px;border:1px solid var(--stone-line);border-radius:6px;margin:16px 0;}
+  #admin-panel{display:none;}
+  .admin-wrap h1{font-size:24px;text-align:center;margin-bottom:30px;}
+  .admin-box{background:#fff;border:1px solid var(--stone-line);border-radius:10px;padding:22px;margin-bottom:24px;}
+  .admin-box label{display:block;font-size:12.5px;font-weight:600;color:var(--text-mute);margin:12px 0 6px;}
+  .admin-box input,.admin-box select,.admin-box textarea{width:100%;border:1px solid var(--stone-line);border-radius:6px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:14px;}
+  .admin-box textarea{min-height:70px;resize:vertical;}
+  .upload-status{font-size:12.5px;color:var(--gold);margin-top:10px;display:none;}
+  .admin-list-item{display:flex;gap:12px;align-items:center;border-bottom:1px solid var(--stone-line);padding:10px 0;}
+  .admin-list-item img{width:52px;height:52px;object-fit:cover;border-radius:6px;flex:0 0 auto;}
+  .admin-list-item .info{flex:1;font-size:12.5px;}
+  .admin-list-item .info b{display:block;font-size:13.5px;color:var(--ink);}
+  .admin-list-item button{background:none;border:1px solid #c85a5a;color:#c85a5a;border-radius:4px;padding:5px 10px;font-size:11px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <div class="admin-wrap">
+
+    <div class="admin-lock" id="admin-lock">
+      <h1>🔒 Espace administrateur</h1>
+      <p style="color:var(--text-mute);font-size:14px;">Entrez le code d'accès pour publier une réalisation.</p>
+      <input type="password" id="admin-code" placeholder="Code d'accès">
+      <br>
+      <button class="btn btn-onlight" onclick="checkAdminCode()">Entrer</button>
+      <p id="admin-error" style="color:#c85a5a;font-size:13px;display:none;">Code incorrect.</p>
+    </div>
+
+    <div id="admin-panel">
+      <h1>Publier une réalisation</h1>
+
+      <div class="admin-box">
+        <label>Zone concernée</label>
+        <select id="ad-zone">
+          <option value="ZONE A">Événementiel (ZONE A)</option>
+          <option value="ZONE B">Promotion Commerciale (ZONE B)</option>
+          <option value="ZONE C">Média &amp; Digital (ZONE C)</option>
+          <option value="ZONE D">Services Techniques (ZONE D)</option>
+        </select>
+
+        <label>Titre</label>
+        <input type="text" id="ad-title" placeholder="Ex : Mariage Kavumu - Juin 2026">
+
+        <label>Description</label>
+        <textarea id="ad-desc" placeholder="Décrivez la réalisation, le client, le contexte..."></textarea>
+
+        <label>Lien (site du partenaire, page Facebook, etc. — optionnel)</label>
+        <input type="url" id="ad-link" placeholder="https://...">
+
+        <label>Photo (depuis votre téléphone) — laissez vide si vous mettez une vidéo ci-dessous</label>
+        <input type="file" id="ad-file" accept="image/*">
+
+        <label>Vidéo YouTube (optionnel — collez le lien après l'avoir mise en ligne sur votre chaîne)</label>
+        <input type="url" id="ad-video" placeholder="https://youtube.com/watch?v=...">
+
+        <button class="btn btn-onlight" style="margin-top:16px;" onclick="publishRealisation()">Publier</button>
+        <p class="upload-status" id="upload-status">Envoi en cours...</p>
+      </div>
+
+      <div class="admin-box">
+        <h2 style="font-size:15px;margin-bottom:10px;">Réalisations publiées</h2>
+        <div id="admin-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js"></script>
+  <script src="script.js"></script>
+  <script>
+    function checkAdminCode(){
+      const val = document.getElementById("admin-code").value;
+      if (val === GOLDEN_ADMIN_CODE){
+        document.getElementById("admin-lock").style.display = "none";
+        document.getElementById("admin-panel").style.display = "block";
+        loadAdminList();
+      } else {
+        document.getElementById("admin-error").style.display = "block";
+      }
+    }
+
+    function extractYouTubeId(url){
+      const m = String(url || "").match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([A-Za-z0-9_-]{11})/);
+      return m ? m[1] : null;
+    }
+
+    function publishRealisation(){
+      const zone = document.getElementById("ad-zone").value;
+      const title = document.getElementById("ad-title").value.trim();
+      const description = document.getElementById("ad-desc").value.trim();
+      const link = document.getElementById("ad-link").value.trim();
+      const fileInput = document.getElementById("ad-file");
+      const file = fileInput.files[0];
+      const videoUrl = document.getElementById("ad-video").value.trim();
+      const youtubeId = extractYouTubeId(videoUrl);
+      const status = document.getElementById("upload-status");
+
+      if (!title || (!file && !youtubeId)){
+        alert("Merci d'ajouter un titre, et soit une photo, soit un lien YouTube valide.");
+        return;
+      }
+
+      status.style.display = "block";
+
+      function saveRealisation(imageUrl, videoId){
+        return db.collection("realisations_golden").add({
+          zone: zone,
+          title: title,
+          description: description,
+          link: link,
+          imageUrl: imageUrl,
+          videoId: videoId || null,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      // Cas 1 : une vidéo YouTube est fournie → on utilise sa miniature automatique, pas besoin d'ImgBB
+      if (youtubeId){
+        status.textContent = "Publication de la vidéo...";
+        saveRealisation("https://img.youtube.com/vi/" + youtubeId + "/hqdefault.jpg", youtubeId)
+          .then(function(){ finishPublish(status, fileInput); })
+          .catch(function(err){ status.textContent = "❌ Erreur lors de l'envoi."; console.error(err); });
+        return;
+      }
+
+      // Cas 2 : une photo est fournie → envoi vers ImgBB
+      if (!IMGBB_API_KEY || IMGBB_API_KEY === "VOTRE_CLE_IMGBB_ICI"){
+        alert("La clé ImgBB n'est pas encore configurée dans script.js.");
+        return;
+      }
+      status.textContent = "Envoi de la photo en cours...";
+      const formData = new FormData();
+      formData.append("image", file);
+
+      fetch("https://api.imgbb.com/1/upload?key=" + IMGBB_API_KEY, { method: "POST", body: formData })
+        .then(function(r){ return r.json(); })
+        .then(function(result){
+          if (!result.success) throw new Error("Échec de l'envoi vers ImgBB");
+          return saveRealisation(result.data.url, null);
+        })
+        .then(function(){ finishPublish(status, fileInput); })
+        .catch(function(err){
+          status.textContent = "❌ Erreur lors de l'envoi.";
+          console.error(err);
+        });
+    }
+
+    function finishPublish(status, fileInput){
+      status.textContent = "✅ Publié avec succès !";
+      document.getElementById("ad-title").value = "";
+      document.getElementById("ad-desc").value = "";
+      document.getElementById("ad-link").value = "";
+      document.getElementById("ad-video").value = "";
+      fileInput.value = "";
+      loadAdminList();
+      setTimeout(function(){ status.style.display = "none"; }, 3000);
+    }
+
+    function loadAdminList(){
+      const list = document.getElementById("admin-list");
+      db.collection("realisations_golden").orderBy("createdAt", "desc").onSnapshot(function(snapshot){
+        if (snapshot.empty){
+          list.innerHTML = '<p style="font-size:13px;color:var(--text-mute);">Aucune réalisation publiée pour le moment.</p>';
+          return;
+        }
+        list.innerHTML = snapshot.docs.map(function(doc){
+          const d = doc.data();
+          return '<div class="admin-list-item">' +
+            '<img src="' + d.imageUrl + '">' +
+            '<div class="info"><b>' + d.title + '</b>' + d.zone + '</div>' +
+            '<button onclick="deleteRealisation(\'' + doc.id + '\')">Supprimer</button>' +
+            '</div>';
+        }).join("");
+      });
+    }
+
+    function deleteRealisation(id){
+      if (!confirm("Supprimer cette réalisation ?")) return;
+      db.collection("realisations_golden").doc(id).delete();
+    }
+  </script>
+
+</body>
+</html>
