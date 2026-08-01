@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Événementiel — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="style.css">
+<style>
+  .zone-content{max-width:900px;margin:0 auto;padding:56px 24px 90px;}
+  .zone-content h2{font-size:22px;font-weight:600;margin-bottom:6px;}
+  .zone-content .section-lead{color:var(--text-mute);font-size:14.5px;margin-bottom:6px;}
+  .comments-section{background:#fff;border:1px solid var(--stone-line);border-radius:10px;padding:24px;margin-top:50px;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <header class="zone-hero">
+    <div class="zone-code eyebrow">ZONE A</div>
+    <h1 data-i18n="nav_zone_a">Événementiel</h1>
+    <p>Organisation de mariages, décoration, traiteur, danseurs, comédiens et coordination de fêtes — de l'idée jusqu'au jour J.</p>
+    <div class="zone-actions">
+      <a class="btn" href="mailto:goldenbusinessone@gmail.com?subject=Demande%20de%20renseignement%20-%20ZONE%20A%20Événementiel" data-i18n="btn_quote">Demander un devis</a>
+      <button class="like-btn" id="like-btn"><span class="heart">🤍</span> J'aime <span id="like-count">0</span></button>
+    </div>
+  </header>
+
+  <div class="marquee">
+    <div class="marquee-track" id="marquee-a"><p class="cm-empty" style="color:#c9c4b6;padding:0 24px;">Chargement de la galerie…</p></div>
+  </div>
+
+  <section class="zone-content">
+    <h2>Nos réalisations</h2>
+    <p class="section-lead">Un aperçu de nos événements passés — mariages, fêtes et cérémonies organisés par Golden.</p>
+    <div class="realisations-grid" id="realisations-a"></div>
+
+    <div class="comments-section">
+      <h2 data-i18n="btn_comments" style="font-size:16px;">💬 Commentaires sur cette zone</h2>
+      <div class="comments-list" data-zone="ZONE A" id="zone-a-comments">Chargement des commentaires…</div>
+      <form class="comment-form" data-zone="ZONE A" data-label="Événementiel">
+        <input class="cm-name" type="text" placeholder="Votre nom (optionnel)">
+        <div class="emoji-row">
+          <span onclick="insertEmoji(this)">👍</span><span onclick="insertEmoji(this)">❤️</span><span onclick="insertEmoji(this)">🔥</span><span onclick="insertEmoji(this)">😊</span><span onclick="insertEmoji(this)">🎉</span><span onclick="insertEmoji(this)">👏</span>
+        </div>
+        <textarea class="cm-text" placeholder="Écrire un commentaire..." required></textarea>
+        <button type="submit" class="btn btn-onlight btn-sm" data-i18n="btn_send">Publier</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js"></script>
+  <script src="script.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      loadRealisationsMarquee("ZONE A", "marquee-a");
+      loadRealisationsList("ZONE A", "realisations-a");
+      setupZoneLike("ZONE A", "like-btn", "like-count");
+
+      // Commentaires (même moteur que la page d'accueil)
+      const container = document.getElementById("zone-a-comments");
+      if (db){
+        db.collection("avis_golden").where("zone","==","ZONE A").orderBy("createdAt","desc")
+          .onSnapshot(function(snapshot){
+            if (snapshot.empty){ container.innerHTML = '<p class="cm-empty">Soyez le premier à commenter cette zone ✨</p>'; return; }
+            container.innerHTML = snapshot.docs.map(doc => renderComment(doc.data())).join("");
+          }, function(err){ container.innerHTML = '<p class="cm-empty">Commentaires momentanément indisponibles.</p>'; console.error(err); });
+      }
+
+      document.querySelector(".comment-form").addEventListener("submit", function(e){
+        e.preventDefault();
+        if (!db) return;
+        const form = e.target;
+        const name = form.querySelector(".cm-name").value.trim() || "Anonyme";
+        const text = form.querySelector(".cm-text").value.trim();
+        if (!text) return;
+        db.collection("avis_golden").add({
+          zone: "ZONE A", zoneLabel: "Événementiel", name: name, text: text,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function(){ form.reset(); });
+      });
+    });
+  </script>
+
+</body>
+</html>
