@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boutique — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260813">
+<style>
+  .shop-header{background:var(--ink);padding:24px 20px 20px;text-align:center;}
+  .shop-header h1{color:#fff;font-size:20px;font-weight:600;margin-bottom:4px;}
+  .shop-header p{color:#c9c4b6;font-size:13px;}
+  .shop-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:18px 16px 40px;max-width:900px;margin:0 auto;}
+  @media (min-width:640px){.shop-grid{grid-template-columns:repeat(3,1fr);}}
+  @media (min-width:960px){.shop-grid{grid-template-columns:repeat(4,1fr);}}
+  .product-card{background:#fff;border:1px solid var(--stone-line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;}
+  .product-card .thumb{position:relative;aspect-ratio:1/1;background:var(--stone-line);}
+  .product-card .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .product-discount{position:absolute;top:6px;left:6px;background:#d0453b;color:#fff;font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;}
+  .product-info{padding:9px 10px 11px;flex:1;display:flex;flex-direction:column;}
+  .product-name{font-size:12.5px;color:var(--ink);line-height:1.35;margin-bottom:6px;flex:1;}
+  .product-price-row{display:flex;align-items:baseline;gap:6px;margin-bottom:8px;}
+  .product-price{font-size:15px;font-weight:700;color:var(--ink);}
+  .product-price-old{font-size:11.5px;color:var(--text-mute);text-decoration:line-through;}
+  .add-cart-btn{background:var(--ink);color:#fff;border:none;border-radius:6px;padding:7px 0;font-size:12px;font-weight:600;cursor:pointer;width:100%;}
+  .add-cart-btn.added{background:var(--gold);color:var(--ink);}
+  .shop-empty{grid-column:1/-1;text-align:center;color:var(--text-mute);padding:60px 20px;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <div class="shop-header">
+    <h1>🛍️ Boutique Golden</h1>
+    <p>Une sélection d'articles disponibles à la commande directe.</p>
+  </div>
+
+  <div class="shop-grid" id="shop-grid">
+    <p class="shop-empty">Chargement des produits...</p>
+  </div>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260813"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      supaRequest("produits_golden?order=created_at.desc").then(function(rows){
+        const grid = document.getElementById("shop-grid");
+        if (!rows || rows.length === 0){
+          grid.innerHTML = '<p class="shop-empty">Aucun produit disponible pour le moment.</p>';
+          return;
+        }
+        grid.innerHTML = rows.map(function(p, i){
+          const thumb = (p.images && p.images[0]) ? p.images[0] : "";
+          const hasDiscount = p.discount_percent && p.discount_percent > 0;
+          const finalPrice = hasDiscount ? (p.price * (1 - p.discount_percent / 100)) : p.price;
+          return '<div class="product-card">' +
+            '<div class="thumb">' +
+              (hasDiscount ? '<span class="product-discount">-' + p.discount_percent + '%</span>' : '') +
+              (thumb ? '<img src="' + esc(thumb) + '" alt="' + esc(p.name) + '" loading="lazy">' : '') +
+            '</div>' +
+            '<div class="product-info">' +
+              '<div class="product-name">' + esc(p.name) + '</div>' +
+              '<div class="product-price-row">' +
+                '<span class="product-price">' + finalPrice.toFixed(2) + ' $</span>' +
+                (hasDiscount ? '<span class="product-price-old">' + p.price.toFixed(2) + ' $</span>' : '') +
+              '</div>' +
+              '<button class="add-cart-btn" data-index="' + i + '">Ajouter au panier</button>' +
+            '</div>' +
+          '</div>';
+        }).join("");
+
+        grid.querySelectorAll(".add-cart-btn").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            const p = rows[parseInt(btn.dataset.index, 10)];
+            const thumb = (p.images && p.images[0]) ? p.images[0] : "";
+            const hasDiscount = p.discount_percent && p.discount_percent > 0;
+            const finalPrice = hasDiscount ? (p.price * (1 - p.discount_percent / 100)) : p.price;
+            addToCart({ id: p.id, name: p.name, price: finalPrice, image: thumb }, 1);
+            btn.textContent = "Ajouté ✓";
+            btn.classList.add("added");
+            setTimeout(function(){ btn.textContent = "Ajouter au panier"; btn.classList.remove("added"); }, 1500);
+          });
+        });
+      }).catch(function(err){
+        document.getElementById("shop-grid").innerHTML = '<p class="shop-empty">Boutique momentanément indisponible.</p>';
+        console.error(err);
+      });
+    });
+  </script>
+
+</body>
+</html>
