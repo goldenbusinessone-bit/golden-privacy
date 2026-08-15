@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panier — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260813">
+<style>
+  .panier-wrap{max-width:600px;margin:0 auto;padding:36px 20px 40px;}
+  .panier-wrap h1{font-size:22px;margin-bottom:18px;}
+  .cart-line{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--stone-line);border-radius:8px;padding:10px;margin-bottom:10px;}
+  .cart-line img{width:56px;height:56px;object-fit:cover;border-radius:6px;background:var(--stone-line);flex:0 0 auto;}
+  .cart-line-info{flex:1;font-size:13.5px;}
+  .cart-line-info b{display:block;font-size:14px;margin-bottom:2px;}
+  .cart-qty{display:flex;align-items:center;gap:8px;}
+  .cart-qty button{width:26px;height:26px;border:1px solid var(--stone-line);background:#fff;border-radius:5px;font-size:14px;cursor:pointer;}
+  .cart-remove{background:none;border:none;color:#c85a5a;font-size:12px;cursor:pointer;margin-left:8px;}
+  .cart-total-box{background:#fff;border:1px solid var(--stone-line);border-radius:10px;padding:16px;margin:20px 0;display:flex;justify-content:space-between;font-size:16px;font-weight:700;}
+  .panier-empty{text-align:center;color:var(--text-mute);padding:60px 20px;}
+  .cart-box{background:#fff;border:1px solid var(--stone-line);border-radius:10px;padding:20px;margin-bottom:20px;}
+  .cart-box h2{font-size:15px;margin-bottom:10px;}
+  .order-form label{display:block;font-size:12.5px;font-weight:600;color:var(--text-mute);margin:12px 0 6px;}
+  .order-form input,.order-form select{width:100%;border:1px solid var(--stone-line);border-radius:6px;padding:10px 12px;font-size:14px;font-family:'Inter',sans-serif;}
+  .order-confirm{display:none;margin-top:18px;background:#f2f8f0;border:1px solid #b7d9ae;color:#2e5a24;border-radius:8px;padding:14px;font-size:13.5px;}
+  .login-gate{background:#FAF6EA;border:1px dashed var(--stone-line);border-radius:10px;padding:26px 22px;text-align:center;}
+  .login-gate p{color:var(--text-mute);font-size:14px;margin-bottom:16px;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <div class="panier-wrap">
+    <h1>🛒 Mon panier</h1>
+    <div id="cart-lines"></div>
+    <div class="cart-box" id="coupon-box" style="display:none;">
+      <h2>Code promo</h2>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="coupon-input" placeholder="Ex : GOLDEN10" style="flex:1;border:1px solid var(--stone-line);border-radius:6px;padding:9px 12px;">
+        <button class="btn btn-onlight" id="coupon-apply-btn" style="padding:0 16px;">Appliquer</button>
+      </div>
+      <p id="coupon-message" style="font-size:12.5px;margin-top:8px;display:none;"></p>
+    </div>
+
+    <div class="cart-total-box" id="cart-total-box" style="display:none;">
+      <span>Total</span><span id="cart-total-amount">0 $</span>
+    </div>
+
+    <div class="cart-box" id="pay-methods-box" style="display:none;">
+      <h2>Étape 1 — Envoie le paiement</h2>
+      <p style="font-size:13px;color:var(--text-mute);margin-bottom:10px;">Ouvre ton appli Mobile Money et envoie le montant total à l'un de ces numéros Golden :</p>
+      <div class="pay-methods" id="pay-methods"></div>
+      <p style="font-size:12.5px;color:var(--text-mute);margin-top:10px;">Ton opérateur t'enverra un message avec un numéro de référence — garde-le, tu en auras besoin juste en dessous.</p>
+    </div>
+
+    <form class="order-form" id="checkout-form" style="display:none;">
+      <div class="cart-box">
+        <h2>Étape 2 — Confirme ta commande</h2>
+        <p style="font-size:12.5px;color:var(--text-mute);margin-bottom:12px;">À remplir <b>après</b> avoir envoyé le paiement à l'étape 1, avec la référence reçue par SMS.</p>
+        <label for="of-name">Nom complet</label>
+        <input id="of-name" type="text" required>
+        <label for="of-phone">Numéro de téléphone</label>
+        <input id="of-phone" type="tel" required placeholder="+243...">
+        <label for="of-method">Moyen de paiement utilisé</label>
+        <select id="of-method" required>
+          <option value="">Choisir...</option>
+          <option value="Airtel Money">Airtel Money</option>
+          <option value="M-Pesa">M-Pesa</option>
+        </select>
+        <label for="of-txid">Numéro de référence reçu par SMS après ton paiement</label>
+        <input id="of-txid" type="text" required placeholder="Ex : MP240801.1234.A56789">
+        <button type="submit" class="btn btn-onlight" style="margin-top:18px;">Acheter maintenant</button>
+        <div class="order-confirm" id="order-confirm">✅ Commande envoyée ! Golden vérifie votre paiement et vous contacte très vite.</div>
+      </div>
+    </form>
+
+    <div class="login-gate" id="login-gate" style="display:none;">
+      <p>🔒 Connecte-toi à ton compte Golden pour confirmer cette commande.</p>
+      <a href="compte.html" class="btn btn-onlight">Se connecter</a>
+    </div>
+  </div>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260813"></script>
+  <script>
+    let appliedCoupon = null;
+
+    function renderCartLines(){
+      const cart = getCart();
+      const linesEl = document.getElementById("cart-lines");
+      const totalBox = document.getElementById("cart-total-box");
+      const payBox = document.getElementById("pay-methods-box");
+      const couponBox = document.getElementById("coupon-box");
+
+      if (cart.length === 0){
+        linesEl.innerHTML = '<p class="panier-empty">Ton panier est vide. <a href="boutique.html">Voir la boutique →</a></p>';
+        totalBox.style.display = "none";
+        payBox.style.display = "none";
+        couponBox.style.display = "none";
+        document.getElementById("checkout-form").style.display = "none";
+        document.getElementById("login-gate").style.display = "none";
+        return;
+      }
+
+      linesEl.innerHTML = cart.map(function(item){
+        return '<div class="cart-line" data-id="' + item.id + '">' +
+          (item.image ? '<img src="' + item.image + '">' : '<img src="">') +
+          '<div class="cart-line-info"><b>' + esc(item.name) + '</b>' + item.price.toFixed(2) + ' $ / unité</div>' +
+          '<div class="cart-qty">' +
+            '<button class="qty-minus">−</button><span>' + item.qty + '</span><button class="qty-plus">+</button>' +
+          '</div>' +
+          '<button class="cart-remove">Retirer</button>' +
+        '</div>';
+      }).join("");
+
+      const total = cart.reduce(function(sum, i){ return sum + i.price * i.qty; }, 0);
+      const finalTotal = getFinalTotal(total);
+      document.getElementById("cart-total-amount").textContent = finalTotal.toFixed(2) + " $";
+      totalBox.style.display = "flex";
+      payBox.style.display = "block";
+      couponBox.style.display = "block";
+
+      linesEl.querySelectorAll(".qty-plus").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          const id = btn.closest(".cart-line").dataset.id;
+          const item = getCart().find(function(i){ return i.id === id; });
+          updateCartQty(id, item.qty + 1);
+          renderCartLines();
+        });
+      });
+      linesEl.querySelectorAll(".qty-minus").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          const id = btn.closest(".cart-line").dataset.id;
+          const item = getCart().find(function(i){ return i.id === id; });
+          if (item.qty <= 1) return;
+          updateCartQty(id, item.qty - 1);
+          renderCartLines();
+        });
+      });
+      linesEl.querySelectorAll(".cart-remove").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          removeFromCart(btn.closest(".cart-line").dataset.id);
+          renderCartLines();
+        });
+      });
+
+      if (isClientLoggedIn()){
+        document.getElementById("checkout-form").style.display = "block";
+        document.getElementById("login-gate").style.display = "none";
+        loadOwnProfile().then(function(profile){
+          if (profile && profile.full_name) document.getElementById("of-name").value = profile.full_name;
+        });
+      } else {
+        document.getElementById("checkout-form").style.display = "none";
+        document.getElementById("login-gate").style.display = "block";
+      }
+    }
+
+    function getFinalTotal(rawTotal){
+      if (appliedCoupon && rawTotal >= appliedCoupon.min_order){
+        return rawTotal * (1 - appliedCoupon.discount_percent / 100);
+      }
+      return rawTotal;
+    }
+
+    document.getElementById("coupon-apply-btn").addEventListener("click", function(){
+      const code = document.getElementById("coupon-input").value.trim().toUpperCase();
+      const msg = document.getElementById("coupon-message");
+      if (!code) return;
+      supaRequest("coupons_golden?code=eq." + encodeURIComponent(code)).then(function(rows){
+        msg.style.display = "block";
+        if (!rows || rows.length === 0){
+          appliedCoupon = null;
+          msg.style.color = "#c85a5a";
+          msg.textContent = "Code invalide ou expiré.";
+        } else {
+          const total = getCart().reduce(function(sum, i){ return sum + i.price * i.qty; }, 0);
+          if (total < rows[0].min_order){
+            appliedCoupon = null;
+            msg.style.color = "#c85a5a";
+            msg.textContent = "Ce code nécessite un panier d'au moins " + rows[0].min_order + " $.";
+          } else {
+            appliedCoupon = rows[0];
+            msg.style.color = "#3f7a34";
+            msg.textContent = "✅ Code appliqué : -" + rows[0].discount_percent + "%";
+          }
+        }
+        renderCartLines();
+      }).catch(function(err){ console.error(err); });
+    });
+
+    document.addEventListener("DOMContentLoaded", function(){
+      renderCartLines();
+      const box = document.getElementById("pay-methods");
+      if (box && typeof GOLDEN_PAYMENT_METHODS !== "undefined"){
+        box.innerHTML = GOLDEN_PAYMENT_METHODS.map(function(m){
+          return '<div class="pay-method"><span class="pay-method-name">' + m.name + '</span><span class="pay-method-number">' + m.number + '</span></div>';
+        }).join("");
+      }
+    });
+
+    document.getElementById("checkout-form").addEventListener("submit", function(e){
+      e.preventDefault();
+      const session = getClientSession();
+      const cart = getCart();
+      if (!session || cart.length === 0) return;
+
+      const total = getFinalTotal(cart.reduce(function(sum, i){ return sum + i.price * i.qty; }, 0));
+      const order = {
+        user_id: session.user.id,
+        items: cart,
+        total: total,
+        name: document.getElementById("of-name").value.trim(),
+        phone: document.getElementById("of-phone").value.trim(),
+        method: document.getElementById("of-method").value,
+        transaction_id: document.getElementById("of-txid").value.trim(),
+        status: "en attente de vérification"
+      };
+
+      fetch(SUPABASE_URL + "/rest/v1/commandes_produits_golden", {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": "Bearer " + session.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify(order)
+      }).then(function(res){
+        if (!res.ok) return res.text().then(function(t){ throw new Error(t); });
+        document.getElementById("order-confirm").style.display = "block";
+        setCart([]);
+        setTimeout(renderCartLines, 1800);
+      }).catch(function(err){
+        alert("Impossible d'envoyer la commande pour le moment.");
+        console.error(err);
+      });
+    });
+  </script>
+
+</body>
+</html>
