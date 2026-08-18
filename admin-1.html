@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration — Agence Golden</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260814">
+<style>
+  body{background:#F3F1EA;}
+  .admin-lock{max-width:380px;margin:0 auto;padding:90px 24px 40px;text-align:center;}
+  .admin-lock input{width:100%;padding:12px 14px;border:1px solid var(--stone-line);border-radius:8px;margin:8px 0;font-size:15px;font-family:'Inter',sans-serif;}
+  #admin-panel{display:none;}
+  #auth-error{color:#c85a5a;font-size:13px;display:none;margin-top:8px;}
+  #btn-signin:disabled{opacity:.5;}
+
+  .admin-topbar{background:var(--ink);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+  .admin-topbar-brand{display:flex;align-items:center;gap:10px;}
+  .admin-topbar-brand .logo{font-family:'Fraunces',serif;font-weight:700;color:var(--gold);font-size:17px;}
+  .admin-topbar-brand .tag{font-size:10.5px;color:#a39d8a;letter-spacing:1px;text-transform:uppercase;}
+  .admin-logout-btn{background:none;border:1px solid #3a362c;color:#c9c4b6;font-size:12px;padding:6px 12px;border-radius:20px;cursor:pointer;}
+
+  .admin-tabs{display:flex;gap:4px;overflow-x:auto;background:#fff;border-bottom:1px solid var(--stone-line);padding:0 12px;-webkit-overflow-scrolling:touch;}
+  .admin-tab{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 14px 8px;font-size:11px;font-weight:600;color:var(--text-mute);cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;}
+  .admin-tab .tab-icon{font-size:18px;}
+  .admin-tab.active{color:var(--ink);border-bottom-color:var(--gold);}
+  .admin-tab .tab-count{background:var(--stone-line);color:var(--ink);border-radius:9px;font-size:9.5px;font-weight:700;padding:1px 6px;margin-left:3px;}
+
+  .admin-panels{max-width:640px;margin:0 auto;padding:24px 20px 90px;}
+  .admin-panel-section{display:none;}
+  .admin-panel-section.active{display:block;}
+
+  .admin-box{background:#fff;border:1px solid var(--stone-line);border-radius:12px;padding:22px;margin-bottom:20px;box-shadow:0 1px 3px rgba(20,18,15,.04);}
+  .admin-box-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;margin-bottom:16px;color:var(--ink);}
+  .admin-box-title .box-icon{font-size:18px;}
+  .admin-box label{display:block;font-size:12px;font-weight:600;color:var(--text-mute);margin:12px 0 6px;}
+  .admin-box input,.admin-box select,.admin-box textarea{width:100%;border:1px solid var(--stone-line);border-radius:8px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:14px;background:#FCFBF8;}
+  .admin-box textarea{min-height:70px;resize:vertical;}
+  .upload-status{font-size:12.5px;color:var(--gold);margin-top:10px;display:none;}
+
+  .img-picker-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .img-pick{position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;}
+  .img-pick img,.img-pick video{width:100%;height:100%;object-fit:cover;display:block;}
+  .img-pick-video-icon{position:absolute;top:2px;right:2px;font-size:12px;background:rgba(0,0,0,.5);border-radius:4px;padding:1px 3px;}
+  .img-pick.main{border-color:var(--gold);}
+  .img-pick-badge{position:absolute;bottom:0;left:0;right:0;background:var(--gold);color:var(--ink);font-size:8px;font-weight:700;text-align:center;padding:1px 0;}
+  .img-picker-hint{font-size:11.5px;color:var(--text-mute);margin-top:6px;}
+
+  .admin-list-item{display:flex;gap:12px;align-items:center;border-bottom:1px solid var(--stone-line);padding:11px 0;}
+  .admin-list-item:last-child{border-bottom:none;}
+  .admin-list-item img{width:48px;height:48px;object-fit:cover;border-radius:8px;flex:0 0 auto;background:var(--stone-line);}
+  .admin-list-item .info{flex:1;font-size:12.5px;color:var(--text-mute);}
+  .admin-list-item .info b{display:block;font-size:13.5px;color:var(--ink);margin-bottom:1px;}
+  .admin-list-item button{background:none;border:1px solid #dcb2b2;color:#c85a5a;border-radius:6px;padding:6px 11px;font-size:11px;cursor:pointer;font-weight:600;}
+  .admin-list-item .validate-btn{border-color:#a8cf9e;color:#3f7a34;}
+  .admin-empty{font-size:13px;color:var(--text-mute);text-align:center;padding:14px 0;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <div class="admin-lock" id="auth-card">
+    <h1 style="font-size:22px;margin-bottom:8px;">🔒 Espace administrateur</h1>
+    <p style="color:var(--text-mute);font-size:14px;margin-bottom:18px;">Connecte-toi avec ton compte admin.</p>
+    <input type="email" id="admin-email" placeholder="E-mail">
+    <input type="password" id="admin-pass" placeholder="Mot de passe">
+    <button class="btn btn-onlight" id="btn-signin" onclick="adminSignIn()" style="margin-top:10px;width:100%;justify-content:center;">Se connecter</button>
+    <p id="auth-error"></p>
+  </div>
+
+  <div id="admin-panel">
+
+    <div class="admin-topbar">
+      <div class="admin-topbar-brand">
+        <span class="logo">GOLDEN</span>
+        <span class="tag">Admin</span>
+      </div>
+      <button class="admin-logout-btn" onclick="adminSignOut()">Se déconnecter</button>
+    </div>
+
+    <div class="admin-tabs" id="admin-tabs">
+      <div class="admin-tab" data-tab="stats"><span class="tab-icon">📊</span>Statistiques</div>
+      <div class="admin-tab active" data-tab="realisations"><span class="tab-icon">🖼️</span>Réalisations</div>
+      <div class="admin-tab" data-tab="services"><span class="tab-icon">🛍️</span>Services</div>
+      <div class="admin-tab" data-tab="produits"><span class="tab-icon">🛒</span>Boutique</div>
+      <div class="admin-tab" data-tab="podcasts"><span class="tab-icon">🎙️</span>Podcasts</div>
+      <div class="admin-tab" data-tab="coupons"><span class="tab-icon">🎟️</span>Coupons</div>
+      <div class="admin-tab" data-tab="recharges"><span class="tab-icon">💳</span>Recharges<span class="tab-count" id="tab-recharges-count" style="display:none;">0</span></div>
+      <div class="admin-tab" data-tab="visiteurs"><span class="tab-icon">🌍</span>Visiteurs</div>
+    </div>
+
+    <div class="admin-panels">
+
+      <!-- ================= STATISTIQUES ================= -->
+      <div class="admin-panel-section" id="panel-stats">
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">👀</span>Visites du site</div>
+          <div style="font-size:34px;font-weight:700;color:var(--ink);" id="stat-total-visits">—</div>
+          <p style="font-size:12px;color:var(--text-mute);margin-top:4px;">Nombre total de visites comptées (une fois par session/appareil).</p>
+        </div>
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">🖼️</span>Réalisations les plus vues</div>
+          <div id="stat-realisations-list"></div>
+        </div>
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">🎙️</span>Podcasts les plus vus</div>
+          <div id="stat-podcasts-list"></div>
+        </div>
+      </div>
+
+      <!-- ================= RÉALISATIONS ================= -->
+      <div class="admin-panel-section active" id="panel-realisations">
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">🖼️</span>Publier une réalisation</div>
+          <label>Zone concernée</label>
+          <select id="ad-zone">
+            <option value="ZONE A">Événementiel (ZONE A)</option>
+            <option value="ZONE B">Promotion Commerciale (ZONE B)</option>
+            <option value="ZONE C">Média &amp; Digital (ZONE C)</option>
+            <option value="ZONE D">Services Techniques (ZONE D)</option>
+          </select>
+          <label>Titre</label>
+          <input type="text" id="ad-title" placeholder="Ex : Mariage Kavumu - Juin 2026">
+          <label>Description</label>
+          <textarea id="ad-desc" placeholder="Décrivez la réalisation, le client, le contexte..."></textarea>
+          <button type="button" class="ai-translate-btn" data-target="ad-desc">🌐 Traduire avec IA</button>
+          <label>Lien (site du partenaire, page Facebook, etc. — optionnel)</label>
+          <input type="url" id="ad-link" placeholder="https://...">
+          <label>Photos ou vidéos (depuis votre téléphone) — plusieurs possibles, laissez vide si vous mettez un lien YouTube ci-dessous</label>
+          <input type="file" id="ad-file" accept="image/*,video/*" multiple>
+          <div class="img-picker-preview" id="ad-file-preview"></div>
+          <p class="img-picker-hint" id="ad-file-hint" style="display:none;">Clique sur un fichier pour le définir comme média principal (celui affiché sur la grille) — les autres restent visibles dans les détails.</p>
+          <label>Vidéo YouTube (optionnel — collez le lien après l'avoir mise en ligne sur votre chaîne)</label>
+          <input type="url" id="ad-video" placeholder="https://youtube.com/watch?v=...">
+          <input type="hidden" id="ad-edit-id" value="">
+          <button class="btn btn-onlight" id="btn-publish" style="margin-top:16px;" onclick="publishRealisation()">Publier</button>
+          <span id="ad-cancel-edit" onclick="cancelEditRealisation()" style="display:none;margin-left:12px;font-size:12.5px;color:var(--text-mute);cursor:pointer;">Annuler la modification</span>
+          <p class="upload-status" id="upload-status"></p>
+        </div>
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">📋</span>Réalisations publiées</div>
+          <div id="admin-list"></div>
+        </div>
+      </div>
+
+      <!-- ================= SERVICES ================= -->
+      <div class="admin-panel-section" id="panel-services">
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">🛍️</span>Publier un service</div>
+          <label>Zone concernée</label>
+          <select id="sv-zone">
+            <option value="ZONE A">Événementiel (ZONE A)</option>
+            <option value="ZONE B">Promotion Commerciale (ZONE B)</option>
+            <option value="ZONE C">Média &amp; Digital (ZONE C)</option>
+            <option value="ZONE D">Services Techniques (ZONE D)</option>
+          </select>
+          <label>Nom du service</label>
+          <input type="text" id="sv-name" placeholder="Ex : Service Traiteur">
+          <label>Description</label>
+          <textarea id="sv-desc" placeholder="Décrivez ce service en détail..."></textarea>
+          <button type="button" class="ai-translate-btn" data-target="sv-desc">🌐 Traduire avec IA</button>
+          <label>Prix</label>
+          <input type="text" id="sv-price" placeholder="Ex : À partir de 150 $">
+          <label>Conditions d'utilisation</label>
+          <textarea id="sv-conditions" placeholder="Délais, acompte, zone de couverture, etc."></textarea>
+          <button type="button" class="ai-translate-btn" data-target="sv-conditions">🌐 Traduire avec IA</button>
+          <label>Numéro de contact WhatsApp (optionnel)</label>
+          <input type="tel" id="sv-phone" placeholder="Ex : +243970632534">
+          <label>Lien direct (page du vendeur/partenaire — optionnel)</label>
+          <input type="url" id="sv-link" placeholder="https://...">
+          <label>Photos ou vidéos du service (plusieurs possibles)</label>
+          <input type="file" id="sv-images" accept="image/*,video/*" multiple>
+          <div class="img-picker-preview" id="sv-images-preview"></div>
+          <p class="img-picker-hint" id="sv-images-hint" style="display:none;">Clique sur une photo pour la définir comme image principale (celle affichée en premier).</p>
+          <input type="hidden" id="sv-edit-id" value="">
+          <button class="btn btn-onlight" id="btn-publish-service" style="margin-top:16px;" onclick="publishService()">Publier le service</button>
+          <span id="sv-cancel-edit" onclick="cancelEditService()" style="display:none;margin-left:12px;font-size:12.5px;color:var(--text-mute);cursor:pointer;">Annuler la modification</span>
+          <p class="upload-status" id="service-status"></p>
+        </div>
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">📋</span>Services publiés</div>
+          <div id="service-admin-list"></div>
+        </div>
+      </div>
+
+      <!-- ================= PRODUITS (Boutique) ================= -->
+      <div class="admin-panel-section" id="panel-produits">
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">🛒</span>Publier un produit</div>
+          <label>Nom du produit</label>
+          <input type="text" id="pr-name" placeholder="Ex : Sac à main">
+          <label>Description</label>
+          <textarea id="pr-desc" placeholder="Décrivez le produit..."></textarea>
+          <button type="button" class="ai-translate-btn" data-target="pr-desc">🌐 Traduire avec IA</button>
+          <label>Prix ($)</label>
+          <input type="number" step="0.01" id="pr-price" placeholder="Ex : 25.00">
+          <label>Réduction (% — laisser 0 si aucune)</label>
+          <input type="number" id="pr-discount" value="0">
+          <label>Catégorie</label>
+          <input type="text" id="pr-category" placeholder="Ex : Accessoires">
+          <label>Numéro de contact WhatsApp (optionnel)</label>
+          <input type="tel" id="pr-phone" placeholder="Ex : +243970632534">
+          <label>Lien direct (boutique/vendeur du produit — optionnel)</label>
+          <input type="url" id="pr-link" placeholder="https://...">
+          <label>Boutique partenaire (optionnel — si le produit vient d'un commerce avec qui Golden collabore)</label>
+          <input type="text" id="pr-partner" placeholder="Ex : Boutique Kavumu Mode">
+          <label>Adresse de retrait (optionnel — où le client récupère sa commande)</label>
+          <input type="text" id="pr-pickup" placeholder="Ex : Avenue Lumumba, Bukavu">
+          <label>Photos ou vidéos du produit (plusieurs possibles)</label>
+          <input type="file" id="pr-images" accept="image/*,video/*" multiple>
+          <div class="img-picker-preview" id="pr-images-preview"></div>
+          <p class="img-picker-hint" id="pr-images-hint" style="display:none;">Clique sur une photo pour la définir comme image principale (celle affichée en premier).</p>
+          <input type="hidden" id="pr-edit-id" value="">
+          <button class="btn btn-onlight" id="btn-publish-product" style="margin-top:16px;" onclick="publishProduct()">Publier le produit</button>
+          <span id="pr-cancel-edit" onclick="cancelEditProduct()" style="display:none;margin-left:12px;font-size:12.5px;color:var(--text-mute);cursor:pointer;">Annuler la modification</span>
+          <p class="upload-status" id="product-status"></p>
+        </div>
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">📋</span>Produits publiés</div>
+          <div id="product-admin-list"></div>
+        </div>
+      </div>
+
+      <!-- ================= PODCASTS ================= -->
+      <div class="admin-panel-section" id="panel-podcasts">
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">🎙️</span>Publier un podcast <span style="font-weight:400;font-size:11.5px;color:var(--text-mute);">(Média &amp; Digital)</span></div>
+          <label>Titre de l'épisode</label>
+          <input type="text" id="pc-title" placeholder="Ex : Épisode 1 — Comment lancer son business">
+          <label>Description</label>
+          <textarea id="pc-desc" placeholder="Résumé de l'épisode..."></textarea>
+          <button type="button" class="ai-translate-btn" data-target="pc-desc">🌐 Traduire avec IA</button>
+          <label>Lien de l'épisode (Spotify, YouTube, SoundCloud...)</label>
+          <input type="url" id="pc-link" placeholder="https://open.spotify.com/episode/...">
+          <label>Ou fichier audio (MP3, depuis votre téléphone)</label>
+          <input type="file" id="pc-audio" accept="audio/*">
+          <button class="btn btn-onlight" id="btn-publish-podcast" style="margin-top:16px;" onclick="publishPodcast()">Publier le podcast</button>
+          <p class="upload-status" id="podcast-status"></p>
+        </div>
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">📋</span>Podcasts publiés</div>
+          <div id="podcast-admin-list"></div>
+        </div>
+      </div>
+
+      <!-- ================= COUPONS ================= -->
+      <div class="admin-panel-section" id="panel-coupons">
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">🎟️</span>Publier un coupon</div>
+          <label>Code</label>
+          <input type="text" id="cp-code" placeholder="Ex : GOLDEN10">
+          <label>Réduction (%)</label>
+          <input type="number" id="cp-discount" placeholder="Ex : 10">
+          <label>Montant minimum d'achat ($)</label>
+          <input type="number" step="0.01" id="cp-min" value="0">
+          <label>Date d'expiration (optionnel)</label>
+          <input type="date" id="cp-expires">
+          <button class="btn btn-onlight" id="btn-publish-coupon" style="margin-top:16px;" onclick="publishCoupon()">Publier le coupon</button>
+          <p class="upload-status" id="coupon-status"></p>
+        </div>
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">📋</span>Coupons publiés</div>
+          <div id="coupon-admin-list"></div>
+        </div>
+      </div>
+
+      <!-- ================= RECHARGES GOLDEN PAY ================= -->
+      <div class="admin-panel-section" id="panel-recharges">
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">💳</span>Recharges Golden Pay à valider</div>
+          <p style="font-size:12.5px;color:var(--text-mute);margin-bottom:12px;">Vérifie que le paiement est bien arrivé sur ton compte Mobile Money avant de valider — ça crédite le solde du client.</p>
+          <div id="recharges-admin-list"></div>
+        </div>
+      </div>
+
+      <!-- ================= VISITEURS — IP, ville, opérateur ================= -->
+      <div class="admin-panel-section" id="panel-visiteurs">
+        <div class="admin-box">
+          <div class="admin-box-title"><span class="box-icon">🌍</span>Journal des visiteurs</div>
+          <p style="font-size:12.5px;color:var(--text-mute);margin-bottom:12px;">Une ligne par visite (connectée ou non) — IP, ville, opérateur/FAI approximatifs. Les VPN faussent la localisation affichée.</p>
+          <div id="visiteurs-admin-list"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260814"></script>
+  <script>
+    document.querySelectorAll(".admin-tab").forEach(function(tab){
+      tab.addEventListener("click", function(){
+        document.querySelectorAll(".admin-tab").forEach(function(t){ t.classList.remove("active"); });
+        document.querySelectorAll(".admin-panel-section").forEach(function(p){ p.classList.remove("active"); });
+        tab.classList.add("active");
+        document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+      });
+    });
+
+    // ---- Crée une nouvelle ligne (POST) ou met à jour une ligne existante (PATCH) ----
+    function saveOrUpdate(table, editId, body){
+      return editId
+        ? supaRequest(table + "?id=eq." + editId, { method: "PATCH", body: body })
+        : supaRequest(table, { method: "POST", body: body });
+    }
+
+    // ---- Bascule la visibilité publique/privée d'une publication ----
+    function toggleVisibility(table, id, currentlyPublic, reloadFn){
+      supaRequest(table + "?id=eq." + id, { method: "PATCH", body: { is_public: !currentlyPublic } })
+        .then(reloadFn)
+        .catch(function(err){ alert("Impossible de changer la visibilité : " + err.message); });
+    }
+
+    // ---- Vérifie que chaque fichier est bien une image/vidéo et pas trop lourd ----
+    function validateMediaFiles(files){
+      const maxSize = 50 * 1024 * 1024;
+      for (const f of files){
+        if (!f.type.startsWith("image/") && !f.type.startsWith("video/")){
+          return "Chaque fichier doit être une image ou une vidéo.";
+        }
+        if (f.size > maxSize){
+          return "Un fichier est trop lourd (max 50 Mo).";
+        }
+      }
+      return null;
+    }
+
+    function setupImagePicker(inputId, previewId, hintId){
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(previewId);
+      const hint = document.getElementById(hintId);
+      let mainIndex = 0;
+
+      function render(){
+        const files = Array.from(input.files);
+        preview.innerHTML = "";
+        hint.style.display = files.length > 1 ? "block" : "none";
+        files.forEach(function(file, i){
+          const url = URL.createObjectURL(file);
+          const isVideo = file.type.startsWith("video/");
+          const div = document.createElement("div");
+          div.className = "img-pick" + (i === mainIndex ? " main" : "");
+          const mediaHtml = isVideo
+            ? '<video src="' + url + '" muted></video><span class="img-pick-video-icon">🎥</span>'
+            : '<img src="' + url + '">';
+          div.innerHTML = mediaHtml + (i === mainIndex ? '<span class="img-pick-badge">Principale</span>' : '');
+          div.addEventListener("click", function(){ mainIndex = i; render(); });
+          preview.appendChild(div);
+        });
+      }
+
+      input.addEventListener("change", function(){ mainIndex = 0; render(); });
+
+      return {
+        reset: function(){ mainIndex = 0; preview.innerHTML = ""; hint.style.display = "none"; },
+        getOrderedFiles: function(){
+          const files = Array.from(input.files);
+          if (files.length === 0) return [];
+          const main = files[mainIndex];
+          const rest = files.filter(function(_, i){ return i !== mainIndex; });
+          return [main].concat(rest);
+        }
+      };
+    }
+
+    const svImagePicker = setupImagePicker("sv-images", "sv-images-preview", "sv-images-hint");
+    const prImagePicker = setupImagePicker("pr-images", "pr-images-preview", "pr-images-hint");
+    const adImagePicker = setupImagePicker("ad-file", "ad-file-preview", "ad-file-hint");
+
+    function adminSignIn(){
+      const email = document.getElementById("admin-email").value.trim();
+      const pass = document.getElementById("admin-pass").value;
+      const err = document.getElementById("auth-error");
+      err.style.display = "none";
+
+      if (!email || !pass){
+        err.textContent = "E-mail et mot de passe requis.";
+        err.style.display = "block";
+        return;
+      }
+
+      document.getElementById("btn-signin").disabled = true;
+      supaSignIn(email, pass).then(function(data){
+        if (data.user.id !== GOLDEN_ADMIN_UID){
+          supaSignOut();
+          err.textContent = "Ce compte n'a pas accès au panel administrateur.";
+          err.style.display = "block";
+          document.getElementById("btn-signin").disabled = false;
+          return;
+        }
+        showAdminPanel();
+      }).catch(function(e){
+        err.textContent = "Connexion refusée : " + e.message;
+        err.style.display = "block";
+        document.getElementById("btn-signin").disabled = false;
+      });
+    }
+
+    function adminSignOut(){
+      supaSignOut();
+      document.getElementById("auth-card").style.display = "block";
+      document.getElementById("admin-panel").style.display = "none";
+      document.getElementById("btn-signin").disabled = false;
+    }
+
+    function showAdminPanel(){
+      document.getElementById("auth-card").style.display = "none";
+      document.getElementById("admin-panel").style.display = "block";
+      loadAdminList();
+      loadPodcastAdminList();
+      loadServiceAdminList();
+      loadProductAdminList();
+      loadRechargesAdminList();
+      loadCouponAdminList();
+      loadVisiteursAdminList();
+      loadStats();
+    }
+
+    supaGetCurrentUser().then(function(user){
+      if (user && user.id === GOLDEN_ADMIN_UID) showAdminPanel();
+      else if (isSupaLoggedIn()) supaSignOut();
+    });
+
+    function loadStats(){
+      supaRequest("site_visits_golden?select=count").then(function(rows){
+        document.getElementById("stat-total-visits").textContent = (rows && rows[0]) ? rows[0].count : 0;
+      }).catch(function(err){ console.error(err); });
+
+      supaRequest("realisations_golden?order=views_count.desc&limit=10&select=id,title,zone,views_count,image_url").then(function(rows){
+        const list = document.getElementById("stat-realisations-list");
+        if (!rows || rows.length === 0){
+          list.innerHTML = '<p class="admin-empty">Aucune réalisation publiée pour le moment.</p>';
+          return;
+        }
+        list.innerHTML = rows.map(function(d){
+          return '<div class="admin-list-item">' +
+            (isVideoUrl(d.image_url) ? '<video src="' + d.image_url + '" muted></video>' : '<img src="' + d.image_url + '">') +
+            '<div class="info"><b>' + esc(d.title) + '</b>' + esc(d.zone) + '</div>' +
+            '<span style="font-weight:700;color:var(--gold);">👁️ ' + (d.views_count || 0) + '</span>' +
+          '</div>';
+        }).join("");
+      }).catch(function(err){ console.error(err); });
+
+      supaRequest("podcasts_golden?order=views_count.desc&limit=10&select=id,title,views_count").then(function(rows){
+        const list = document.getElementById("stat-podcasts-list");
+        if (!rows || rows.length === 0){
+          list.innerHTML = '<p class="admin-empty">Aucun podcast publié pour le moment.</p>';
+          return;
+        }
+        list.innerHTML = rows.map(function(d){
+          return '<div class="admin-list-item">' +
+            '<div class="info"><b>' + esc(d.title) + '</b></div>' +
+            '<span style="font-weight:700;color:var(--gold);">👁️ ' + (d.views_count || 0) + '</span>' +
+          '</div>';
+        }).join("");
+      }).catch(function(err){ console.error(err); });
+    }
+
+    function showStatus(text, isError){
+      const status = document.getElementById("upload-status");
+      status.style.display = "block";
+      status.style.color = isError ? "#c85a5a" : "var(--gold)";
+      status.textContent = text;
+    }
+    function clearStatus(){
+      document.getElementById("upload-status").style.display = "none";
+    }
+
+    function publishRealisation(){
+      const btn = document.getElementById("btn-publish");
+      btn.disabled = true;
+
+      const editId = document.getElementById("ad-edit-id").value;
+      const zone = document.getElementById("ad-zone").value;
+      const title = document.getElementById("ad-title").value.trim();
+      const description = document.getElementById("ad-desc").value.trim();
+      const link = document.getElementById("ad-link").value.trim();
+      const files = adImagePicker.getOrderedFiles(); // [0] = média principal choisi, le reste = galerie détail
+      const videoUrl = document.getElementById("ad-video").value.trim();
+      const youtubeId = extractYouTubeId(videoUrl);
+
+      if (!title || (!editId && files.length === 0 && !youtubeId)){
+        alert("Ajoute un titre, et soit une photo/vidéo, soit un lien YouTube valide.");
+        btn.disabled = false;
+        return;
+      }
+
+      showStatus(editId ? "Mise à jour..." : "Préparation...");
+
+      // Modification sans changer le média : on ne touche qu'aux champs texte
+      if (editId && files.length === 0 && !youtubeId){
+        saveOrUpdate("realisations_golden", editId, { zone: zone, title: title, description: description, link: link })
+          .then(finishPublish).catch(function(err){ showStatus("❌ " + err.message, true); btn.disabled = false; });
+        return;
+      }
+
+      if (youtubeId){
+        showStatus("Publication de la vidéo...");
+        saveOrUpdate("realisations_golden", editId, {
+          zone: zone, title: title, description: description, link: link,
+          image_url: "https://img.youtube.com/vi/" + youtubeId + "/hqdefault.jpg",
+          video_id: youtubeId,
+          media_type: "youtube"
+        }).then(finishPublish).catch(function(err){
+          showStatus("❌ " + err.message, true);
+          btn.disabled = false;
+        });
+        return;
+      }
+
+      const maxSize = 50 * 1024 * 1024;
+      for (const f of files){
+        if (!f.type.startsWith("image/") && !f.type.startsWith("video/")){
+          showStatus("❌ Chaque fichier doit être une image ou une vidéo.", true);
+          btn.disabled = false;
+          return;
+        }
+        if (f.size > maxSize){
+          showStatus("❌ Un fichier est trop lourd (max 50 Mo).", true);
+          btn.disabled = false;
+          return;
+        }
+      }
+
+      showStatus("Envoi des fichiers en cours...");
+
+      Promise.all(files.map(function(f){ return uploadToSupabase(f, "realisations"); }))
+        .then(function(urls){
+          showStatus("Fichiers envoyés ✓ — enregistrement en cours...");
+          const mainUrl = urls[0];
+          const galleryUrls = urls.slice(1);
+          return saveOrUpdate("realisations_golden", editId, {
+            zone: zone, title: title, description: description, link: link,
+            image_url: mainUrl,
+            media_type: files[0].type.startsWith("video/") ? "video" : "image",
+            video_id: null,
+            images: galleryUrls
+          });
+        })
+        .then(finishPublish)
+        .catch(function(err){
+          showStatus("❌ " + err.message, true);
+          btn.disabled = false;
+        });
+    }
+
+    function finishPublish(){
+      showStatus("✅ Enregistré avec succès !");
+      document.getElementById("ad-title").value = "";
+      document.getElementById("ad-desc").value = "";
+      document.getElementById("ad-link").value = "";
+      document.getElementById("ad-video").value = "";
+      document.getElementById("ad-file").value = "";
+      adImagePicker.reset();
+      cancelEditRealisation();
+      document.getElementById("btn-publish").disabled = false;
+      loadAdminList();
+      setTimeout(clearStatus, 2500);
+    }
+
+    function editRealisation(d){
+      document.getElementById("ad-edit-id").value = d.id;
+      document.getElementById("ad-zone").value = d.zone;
+      document.getElementById("ad-title").value = d.title || "";
+      document.getElementById("ad-desc").value = d.description || "";
+      document.getElementById("ad-link").value = d.link || "";
+      document.getElementById("ad-video").value = d.video_id ? ("https://youtube.com/watch?v=" + d.video_id) : "";
+      document.getElementById("btn-publish").textContent = "Enregistrer les modifications";
+      document.getElementById("ad-cancel-edit").style.display = "inline";
+      document.querySelector('.admin-tab[data-tab="realisations"]').click();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function cancelEditRealisation(){
+      document.getElementById("ad-edit-id").value = "";
+      document.getElementById("btn-publish").textContent = "Publier";
+      document.getElementById("ad-cancel-edit").style.display = "none";
+    }
+
+    function loadAdminList(){
+      const list = document.getElementById("admin-list");
+      supaRequest("realisations_golden?order=created_at.desc").then(function(rows){
+        if (!rows || rows.length === 0){
+          list.innerHTML = '<p class="admin-empty">Aucune réalisation publiée pour le moment.</p>';
+          return;
+        }
+        list.innerHTML = "";
+        rows.forEach(function(d){
+          const item = document.createElement("div");
+          item.className = "admin-list-item";
+          item.innerHTML =
+            (isVideoUrl(d.image_url) ? '<video src="' + d.image_url + '" muted></video>' : '<img src="' + d.image_url + '">') +
+            '<div class="info"><b>' + esc(d.title) + '</b>' + esc(d.zone) + (d.is_public === false ? ' · <span style="color:#c85a5a;">Privé</span>' : '') + '</div>';
+
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "Modifier";
+          editBtn.className = "validate-btn";
+          editBtn.onclick = function(){ editRealisation(d); };
+          item.appendChild(editBtn);
+
+          const visBtn = document.createElement("button");
+          visBtn.textContent = (d.is_public === false) ? "Rendre public" : "Rendre privé";
+          visBtn.onclick = function(){ toggleVisibility("realisations_golden", d.id, d.is_public !== false, loadAdminList); };
+          item.appendChild(visBtn);
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Supprimer";
+          delBtn.onclick = function(){ deleteRealisation(d.id); };
+          item.appendChild(delBtn);
+
+          list.appendChild(item);
+        });
+      }).catch(function(err){ console.error(err); });
+    }
+
+    function deleteRealisation(id){
+      if (!confirm("Supprimer cette réalisation ?")) return;
+      supaRequest("realisations_golden?id=eq." + id, { method: "DELETE" })
+        .then(loadAdminList)
+        .catch(function(err){ alert("Suppression impossible : " + err.message); });
+    }
+
+    function publishService(){
+      const btn = document.getElementById("btn-publish-service");
+      const status = document.getElementById("service-status");
+      const editId = document.getElementById("sv-edit-id").value;
+      const zone = document.getElementById("sv-zone").value;
+      const name = document.getElementById("sv-name").value.trim();
+      const description = document.getElementById("sv-desc").value.trim();
+      const price = document.getElementById("sv-price").value.trim();
+      const conditions = document.getElementById("sv-conditions").value.trim();
+      const phone = document.getElementById("sv-phone").value.trim();
+      const link = document.getElementById("sv-link").value.trim();
+      const files = svImagePicker.getOrderedFiles();
+
+      if (!name){
+        alert("Ajoute au moins un nom de service.");
+        return;
+      }
+      const mediaError = validateMediaFiles(files);
+      if (mediaError){
+        alert(mediaError);
+        return;
+      }
+
+      btn.disabled = true;
+      status.style.display = "block";
+      status.style.color = "var(--gold)";
+      status.textContent = files.length ? "Envoi des photos en cours..." : (editId ? "Mise à jour..." : "Publication en cours...");
+
+      const uploads = files.map(function(f){ return uploadToSupabase(f, "services"); });
+
+      Promise.all(uploads).then(function(urls){
+        const body = { zone: zone, name: name, description: description, price: price, conditions: conditions, contact_phone: phone, seller_link: link };
+        if (urls.length) body.images = urls; // ne remplace les photos que si de nouvelles ont été choisies
+        return saveOrUpdate("services_golden", editId, body);
+      }).then(function(){
+        status.textContent = editId ? "✅ Service mis à jour !" : "✅ Service publié !";
+        document.getElementById("sv-name").value = "";
+        document.getElementById("sv-desc").value = "";
+        document.getElementById("sv-price").value = "";
+        document.getElementById("sv-conditions").value = "";
+        document.getElementById("sv-phone").value = "";
+        document.getElementById("sv-link").value = "";
+        document.getElementById("sv-images").value = "";
+        svImagePicker.reset();
+        cancelEditService();
+        btn.disabled = false;
+        loadServiceAdminList();
+        setTimeout(function(){ status.style.display = "none"; }, 2500);
+      }).catch(function(err){
+        status.style.color = "#c85a5a";
+        status.textContent = "❌ " + err.message;
+        btn.disabled = false;
+      });
+    }
+
+    function editService(d){
+      document.getElementById("sv-edit-id").value = d.id;
+      document.getElementById("sv-zone").value = d.zone;
+      document.getElementById("sv-name").value = d.name || "";
+      document.getElementById("sv-desc").value = d.description || "";
+      document.getElementById("sv-price").value = d.price || "";
+      document.getElementById("sv-conditions").value = d.conditions || "";
+      document.getElementById("sv-phone").value = d.contact_phone || "";
+      document.getElementById("sv-link").value = d.seller_link || "";
+      document.getElementById("btn-publish-service").textContent = "Enregistrer les modifications";
+      document.getElementById("sv-cancel-edit").style.display = "inline";
+      document.querySelector('.admin-tab[data-tab="services"]').click();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function cancelEditService(){
+      document.getElementById("sv-edit-id").value = "";
+      document.getElementById("btn-publish-service").textContent = "Publier le service";
+      document.getElementById("sv-cancel-edit").style.display = "none";
+    }
+
+    function loadServiceAdminList(){
+      const list = document.getElementById("service-admin-list");
+      supaRequest("services_golden?order=created_at.desc").then(function(rows){
+        if (!rows || rows.length === 0){
+          list.innerHTML = '<p class="admin-empty">Aucun service publié pour le moment.</p>';
+          return;
+        }
+        list.innerHTML = "";
+        rows.forEach(function(d){
+          const item = document.createElement("div");
+          item.className = "admin-list-item";
+          const thumb = (d.images && d.images[0]) ? d.images[0] : "";
+          item.innerHTML =
+            (thumb ? (isVideoUrl(thumb) ? '<video src="' + thumb + '" muted></video>' : '<img src="' + thumb + '">') : '') +
+            '<div class="info"><b>' + esc(d.name) + '</b>' + esc(d.zone) + (d.price ? " — " + esc(d.price) : "") + (d.is_public === false ? ' · <span style="color:#c85a5a;">Privé</span>' : '') + '</div>';
+
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "Modifier";
+          editBtn.className = "validate-btn";
+          editBtn.onclick = function(){ editService(d); };
+          item.appendChild(editBtn);
+
+          const visBtn = document.createElement("button");
+          visBtn.textContent = (d.is_public === false) ? "Rendre public" : "Rendre privé";
+          visBtn.onclick = function(){ toggleVisibility("services_golden", d.id, d.is_public !== false, loadServiceAdminList); };
+          item.appendChild(visBtn);
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Supprimer";
+          delBtn.onclick = function(){ deleteService(d.id); };
+          item.appendChild(delBtn);
+
+          list.appendChild(item);
+        });
+      }).catch(function(err){ console.error(err); });
+    }
+
+    function deleteService(id){
+      if (!confirm("Supprimer ce service ?")) return;
+      supaRequest("services_golden?id=eq." + id, { method: "DELETE" })
+        .then(loadServiceAdminList)
+        .catch(function(err){ alert("Suppression impossible : " + err.message); });
+    }
+
+    function publishProduct(){
+      const btn = document.getElementById("btn-publish-product");
+      const status = document.getElementById("product-status");
+      const editId = document.getElementById("pr-edit-id").value;
+      const name = document.getElementById("pr-name").value.trim();
+      const description = document.getElementById("pr-desc").value.trim();
+      const price = parseFloat(document.getElementById("pr-price").value);
+      const discount = parseInt(document.getElementById("pr-discount").value, 10) || 0;
+      const category = document.getElementById("pr-category").value.trim();
+      const phone = document.getElementById("pr-phone").value.trim();
+      const link = document.getElementById("pr-link").value.trim();
+      const partner = document.getElementById("pr-partner").value.trim();
+      const pickup = document.getElementById("pr-pickup").value.trim();
+      const files = prImagePicker.getOrderedFiles();
+
+      if (!name || isNaN(price)){
+        alert("Ajoute au moins un nom et un prix valide.");
+        return;
+      }
+      const mediaError = validateMediaFiles(files);
+      if (mediaError){
+        alert(mediaError);
+        return;
+      }
+
+      btn.disabled = true;
+      status.style.display = "block";
+      status.style.color = "var(--gold)";
+      status.textContent = files.length ? "Envoi des photos en cours..." : (editId ? "Mise à jour..." : "Publication en cours...");
+
+      const uploads = files.map(function(f){ return uploadToSupabase(f, "produits"); });
+
+      Promise.all(uploads).then(function(urls){
+        const body = { name: name, description: description, price: price, discount_percent: discount, category: category, contact_phone: phone, seller_link: link, partner_name: partner, pickup_address: pickup };
+        if (urls.length) body.images = urls; // ne remplace les photos que si de nouvelles ont été choisies
+        return saveOrUpdate("produits_golden", editId, body);
+      }).then(function(){
+        status.textContent = editId ? "✅ Produit mis à jour !" : "✅ Produit publié !";
+        document.getElementById("pr-name").value = "";
+        document.getElementById("pr-desc").value = "";
+        document.getElementById("pr-price").value = "";
+        document.getElementById("pr-discount").value = "0";
+        document.getElementById("pr-category").value = "";
+        document.getElementById("pr-phone").value = "";
+        document.getElementById("pr-link").value = "";
+        document.getElementById("pr-partner").value = "";
+        document.getElementById("pr-pickup").value = "";
+        document.getElementById("pr-images").value = "";
+        prImagePicker.reset();
+        cancelEditProduct();
+        btn.disabled = false;
+        loadProductAdminList();
+        setTimeout(function(){ status.style.display = "none"; }, 2500);
+      }).catch(function(err){
+        status.style.color = "#c85a5a";
+        status.textContent = "❌ " + err.message;
+        btn.disabled = false;
+      });
+    }
+
+    function editProduct(d){
+      document.getElementById("pr-edit-id").value = d.id;
+      document.getElementById("pr-name").value = d.name || "";
+      document.getElementById("pr-desc").value = d.description || "";
+      document.getElementById("pr-price").value = d.price != null ? d.price : "";
+      document.getElementById("pr-discount").value = d.discount_percent || 0;
+      document.getElementById("pr-category").value = d.category || "";
+      document.getElementById("pr-phone").value = d.contact_phone || "";
+      document.getElementById("pr-link").value = d.seller_link || "";
+      document.getElementById("pr-partner").value = d.partner_name || "";
+      document.getElementById("pr-pickup").value = d.pickup_address || "";
+      document.getElementById("btn-publish-product").textContent = "Enregistrer les modifications";
+      document.getElementById("pr-cancel-edit").style.display = "inline";
+      document.querySelector('.admin-tab[data-tab="produits"]').click();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function cancelEditProduct(){
+      document.getElementById("pr-edit-id").value = "";
+      document.getElementById("btn-publish-product").textContent = "Publier le produit";
+      document.getElementById("pr-cancel-edit").style.display = "none";
+    }
+
+    function loadProductAdminList(){
+      const list = document.getElementById("product-admin-list");
+      supaRequest("produits_golden?order=created_at.desc").then(function(rows){
+        if (!rows || rows.length === 0){
+          list.innerHTML = '<p class="admin-empty">Aucun produit publié pour le moment.</p>';
+          return;
+        }
+        list.innerHTML = "";
+        rows.forEach(function(d){
+          const item = document.createElement("div");
+          item.className = "admin-list-item";
+          const thumb = (d.images && d.images[0]) ? d.images[0] : "";
+          item.innerHTML =
+            (thumb ? (isVideoUrl(thumb) ? '<video src="' + thumb + '" muted></video>' : '<img src="' + thumb + '">') : '') +
+            '<div class="info"><b>' + esc(d.name) + '</b>' + d.price + ' $' + (d.discount_percent ? " (-" + d.discount_percent + "%)" : "") + (d.is_public === false ? ' · <span style="color:#c85a5a;">Privé</span>' : '') + '</div>';
+
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "Modifier";
+          editBtn.className = "validate-btn";
+          editBtn.onclick = function(){ editProduct(d); };
+          item.appendChild(editBtn);
+
+          const visBtn = document.createElement("button");
+          visBtn.textContent = (d.is_public === false) ? "Rendre public" : "Rendre privé";
+          visBtn.onclick = function(){ toggleVisibility("produits_golden", d.id, d.is_public !== false, loadProductAdminList); };
+          item.appendChild(visBtn);
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Supprimer";
+          delBtn.onclick = function(){ deleteProduct(d.id); };
+          item.appendChild(delBtn);
+
+          list.appendChild(item);
+        });
+      }).catch(function(err){ console.error(err); });
+    }
+
+    function deleteProduct(id){
+      if (!confirm("Supprimer ce produit ?")) return;
+      supaRequest("produits_golden?id=eq." + id, { method: "DELETE" })
+        .then(loadProductAdminList)
+        .catch(function(err){ alert("Suppression impossible : " + err.message); });
+    }
+
+    function publishPodcast(){
+      const btn = document.getElementById("btn-publish-podcast");
+      const title = document.getElementById("pc-title").value.trim();
+      const description = document.getElementById("pc-desc").value.trim();
+      const link = document.getElementById("pc-link").value.trim();
+      const audioFile = document.getElementById("pc-audio").files[0];
+      const status = document.getElementById("podcast-status");
+
+      if (!title || (!link && !audioFile)){
+        alert("Ajoute au moins un titre, et soit un lien, soit un fichier audio.");
+        return;
+      }
+
+      btn.disabled = true;
+      status.style.display = "block";
+      status.style.color = "var(--gold)";
+
+      function savePodcast(audioUrl){
+        return supaRequest("podcasts_golden", {
+          method: "POST",
+          body: { title: title, description: description, link: link || null, audio_url: audioUrl || null }
+        });
+      }
+
+      let uploadPromise;
+      if (audioFile){
+        status.textContent = "Envoi du fichier audio en cours...";
+        uploadPromise = uploadToSupabase(audioFile, "podcasts").then(savePodcast);
+      } else {
+        status.textContent = "Publication en cours...";
+        uploadPromise = savePodcast(null);
+      }
+
+      uploadPromise.then(function(){
+        status.textContent = "✅ Podcast publié !";
+        document.getElementById("pc-title").value = "";
+        document.getElementById("pc-desc").value = "";
+        document.getElementById("pc-link").value = "";
+        document.getElementById("pc-audio").value = "";
+        btn.disabled = false;
+        loadPodcastAdminList();
+        setTimeout(function(){ status.style.display = "none"; }, 2500);
+      }).catch(function(err){
+        status.style.color = "#c85a5a";
+        status.textContent = "❌ " + err.message;
+        btn.disabled = false;
+      });
+    }
+
+    function loadPodcastAdminList(){
+      const list = document.getElementById("podcast-admin-list");
+      supaRequest("podcasts_golden?order=created_at.desc").then(function(rows){
+        if (!rows || rows.length === 0){
+          list.innerHTML = '<p class="admin-empty">Aucun podcast publié pour le moment.</p>';
+          return;
+        }
+        list.innerHTML = "";
+        rows.forEach(function(d){
+          const item = document.createElement("div");
+          item.className = "admin-list-item";
+          item.innerHTML = '<div class="info"><b>' + esc(d.title) + '</b>' + esc(d.link || "") + '</div>';
+          const btn = document.createElement("button");
+          btn.textContent = "Supprimer";
+          btn.onclick = function(){ deletePodcast(d.id); };
+          item.appendChild(btn);
+          list.appendChild(item);
+        });
+      }).catch(function(err){ console.error(err); });
+    }
+
+    function deletePodcast(id){
+      if (!confirm("Supprimer ce podcast ?")) return;
+      supaRequest("podcasts_golden?id=eq." + id, { method: "DELETE" })
+        .then(loadPodcastAdminList)
+        .catch(function(err){ alert("Suppression impossible : " + err.message); });
+    }
+
+    function publishCoupon(){
+      const btn = document.getElementById("btn-publish-coupon");
+      const status = document.getElementById("coupon-status");
+      const code = document.getElementById("cp-code").value.trim().toUpperCase();
+      const discount = parseInt(document.getElementById("cp-discount").value, 10);
+      const minOrder = parseFloat(document.getElementById("cp-min").value) || 0;
+      const expires = document.getElementById("cp-expires").value || null;
+
+      if (!code || isNaN(discount)){
+        alert("Ajoute au moins un code et un pourcentage de réduction.");
+        return;
+      }
+
+      btn.disabled = true;
+      status.style.display = "block";
+      status.style.color = "var(--gold)";
+      status.textContent = "Publication...";
+
+      supaRequest("coupons_golden", {
+        method: "POST",
+        body: { code: code, discount_percent: discount, min_order: minOrder, expires_at: expires }
+      }).then(function(){
+        status.textContent = "✅ Coupon publié !";
+        document.getElementById("cp-code").value = "";
+        document.getElementById("cp-discount").value = "";
+        document.getElementById("cp-min").value = "0";
+        document.getElementById("cp-expires").value = "";
+        btn.disabled = false;
+        loadCouponAdminList();
+        setTimeout(function(){ status.style.display = "none"; }, 2500);
+      }).catch(function(err){
+        status.style.color = "#c85a5a";
+        status.textContent = "❌ " + err.message;
+        btn.disabled = false;
+      });
+    }
+
+    function loadCouponAdminList(){
+      const list = document.getElementById("coupon-admin-list");
+      supaRequest("coupons_golden?order=created_at.desc").then(function(rows){
+        if (!rows || rows.length === 0){
+          list.innerHTML = '<p class="admin-empty">Aucun coupon publié pour le moment.</p>';
+          return;
+        }
+        list.innerHTML = "";
+        rows.forEach(function(c){
+          const item = document.createElement("div");
+          item.className = "admin-list-item";
+          item.innerHTML = '<div class="info"><b>' + esc(c.code) + '</b>-' + c.discount_percent + '% dès ' + c.min_order + ' $</div>';
+          const btn = document.createElement("button");
+          btn.textContent = "Supprimer";
+          btn.onclick = function(){ deleteCoupon(c.id); };
+          item.appendChild(btn);
+          list.appendChild(item);
+        });
+      }).catch(function(err){ console.error(err); });
+    }
+
+    function deleteCoupon(id){
+      if (!confirm("Supprimer ce coupon ?")) return;
+      supaRequest("coupons_golden?id=eq." + id, { method: "DELETE" })
+        .then(loadCouponAdminList)
+        .catch(function(err){ alert("Suppression impossible : " + err.message); });
+    }
+
+    function loadRechargesAdminList(){
+      const list = document.getElementById("recharges-admin-list");
+      supaRequest("wallet_recharges_golden?status=eq.en attente de vérification&order=created_at.desc").then(function(rows){
+        const countBadge = document.getElementById("tab-recharges-count");
+        if (!rows || rows.length === 0){
+          list.innerHTML = '<p class="admin-empty">Aucune recharge en attente.</p>';
+          countBadge.style.display = "none";
+          return;
+        }
+        countBadge.textContent = rows.length;
+        countBadge.style.display = "inline-block";
+        list.innerHTML = "";
+        rows.forEach(function(r){
+          const item = document.createElement("div");
+          item.className = "admin-list-item";
+          item.innerHTML = '<div class="info"><b>' + r.amount.toFixed(2) + ' $</b>' + esc(r.method) + ' — réf. ' + esc(r.transaction_id) + '</div>';
+          const btn = document.createElement("button");
+          btn.textContent = "Valider";
+          btn.className = "validate-btn";
+          btn.onclick = function(){ validateRecharge(r.id); };
+          item.appendChild(btn);
+          list.appendChild(item);
+        });
+      }).catch(function(err){ console.error(err); });
+    }
+
+    function validateRecharge(id){
+      if (!confirm("Confirmer que le paiement a bien été reçu et créditer le solde ?")) return;
+      supaRequest("rpc/validate_recharge", { method: "POST", body: { recharge_id: id } })
+        .then(loadRechargesAdminList)
+        .catch(function(err){ alert("Validation impossible : " + err.message); });
+    }
+
+    // ============================================================
+    // 🌍 VISITEURS — journal IP / ville / opérateur
+    // ============================================================
+    function loadVisiteursAdminList(){
+      const list = document.getElementById("visiteurs-admin-list");
+      if (!list) return;
+      list.innerHTML = "<p class=\"cm-empty\">Chargement...</p>";
+
+      supaRequest("visits_log_golden?select=*&order=created_at.desc&limit=200")
+        .then(function(rows){
+          if (!rows || rows.length === 0){
+            list.innerHTML = "<p class=\"cm-empty\">Aucune visite enregistrée pour le moment.</p>";
+            return;
+          }
+          list.innerHTML = rows.map(function(v){
+            const date = new Date(v.created_at).toLocaleString("fr-FR");
+            const statut = v.user_id ? "👤 Compte connecté" : "🕶️ Visiteur anonyme";
+            return (
+              '<div class="admin-list-item" style="flex-direction:column;align-items:flex-start;gap:4px;">' +
+                '<b>' + esc(v.ip || "IP inconnue") + '</b>' +
+                '<span style="font-size:12px;color:var(--text-mute);">' +
+                  esc(v.city || "Ville inconnue") + ', ' + esc(v.country || "") +
+                  ' — ' + esc(v.isp || "Opérateur inconnu") +
+                '</span>' +
+                '<span style="font-size:12px;color:var(--text-mute);">' + statut + ' · Page : ' + esc(v.page || "") + '</span>' +
+                '<span style="font-size:11px;color:var(--text-mute);">' + date + '</span>' +
+              '</div>'
+            );
+          }).join("");
+        })
+        .catch(function(err){
+          list.innerHTML = "<p class=\"cm-empty\">Erreur de chargement : " + esc(err.message) + "</p>";
+        });
+    }
+
+    // ============================================================
+    // 🌐 TRADUIRE AVEC IA — bouton sous les champs description
+    // Ouvre une fenêtre avec la traduction EN et SW du texte tapé,
+    // avec bouton copier pour chaque langue. N'écrit rien dans la
+    // base de données — c'est un outil d'aide à la rédaction.
+    // ============================================================
+    function openAiTranslateModal(targetId){
+      const textarea = document.getElementById(targetId);
+      const text = (textarea && textarea.value || "").trim();
+      if (!text){
+        alert("Écris d'abord un texte dans ce champ avant de le traduire.");
+        return;
+      }
+
+      const existing = document.getElementById("ai-translate-overlay");
+      if (existing) existing.remove();
+
+      const overlay = document.createElement("div");
+      overlay.id = "ai-translate-overlay";
+      overlay.className = "video-modal-overlay search-modal-overlay";
+      overlay.onclick = function(e){ if (e.target === overlay) overlay.remove(); };
+      overlay.innerHTML =
+        '<div class="search-modal-box ai-translate-box">' +
+          '<div class="search-modal-head">' +
+            '<b>🌐 Traduction IA</b>' +
+            '<button class="video-modal-close" id="ai-translate-close" aria-label="Fermer" style="position:static;">✕</button>' +
+          '</div>' +
+          '<div class="ai-translate-body">' +
+            '<div class="ai-translate-lang"><b>Anglais (EN)</b><p id="ai-tr-en" class="ai-tr-text">Traduction...</p><button class="ai-tr-copy" data-lang="en">Copier</button></div>' +
+            '<div class="ai-translate-lang"><b>Swahili (SW)</b><p id="ai-tr-sw" class="ai-tr-text">Traduction...</p><button class="ai-tr-copy" data-lang="sw">Copier</button></div>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      document.body.style.overflow = "hidden";
+      document.getElementById("ai-translate-close").addEventListener("click", function(){
+        overlay.remove();
+        document.body.style.overflow = "";
+      });
+
+      callGoldenAI("translate", text, "anglais").then(function(t){
+        document.getElementById("ai-tr-en").textContent = t;
+      }).catch(function(){
+        document.getElementById("ai-tr-en").textContent = "Erreur de traduction. Réessaie.";
+      });
+      callGoldenAI("translate", text, "swahili").then(function(t){
+        document.getElementById("ai-tr-sw").textContent = t;
+      }).catch(function(){
+        document.getElementById("ai-tr-sw").textContent = "Erreur de traduction. Réessaie.";
+      });
+
+      overlay.querySelectorAll(".ai-tr-copy").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          const lang = btn.dataset.lang;
+          const txt = document.getElementById("ai-tr-" + lang).textContent;
+          navigator.clipboard.writeText(txt).then(function(){
+            btn.textContent = "Copié ✓";
+            setTimeout(function(){ btn.textContent = "Copier"; }, 1500);
+          });
+        });
+      });
+    }
+
+    document.addEventListener("click", function(e){
+      const btn = e.target.closest(".ai-translate-btn");
+      if (btn) openAiTranslateModal(btn.dataset.target);
+    });
+  </script>
+
+</body>
+</html>
