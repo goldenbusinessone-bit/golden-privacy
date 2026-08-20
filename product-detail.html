@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Produit — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260815">
+<style>
+  .svc-wrap{max-width:760px;margin:0 auto;padding:44px 24px 90px;}
+  .svc-gallery{display:flex;gap:8px;overflow-x:auto;border-radius:10px;margin-bottom:24px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;}
+  .svc-gallery img,.svc-gallery video{width:100%;max-width:760px;aspect-ratio:4/3;object-fit:cover;border-radius:10px;flex:0 0 100%;scroll-snap-align:start;}
+  .svc-gallery.empty{aspect-ratio:4/3;background:var(--stone-line);display:flex;align-items:center;justify-content:center;color:var(--text-mute);font-size:14px;}
+  .svc-zone-tag{color:var(--gold);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+  .svc-wrap h1{font-size:26px;font-weight:600;margin:8px 0 14px;}
+  .svc-price{font-size:19px;font-weight:700;color:var(--ink);margin-bottom:20px;}
+  .svc-price .old{font-size:14px;color:var(--text-mute);text-decoration:line-through;font-weight:400;margin-left:8px;}
+  .svc-desc{font-size:15px;color:var(--text-dark);line-height:1.7;margin-bottom:26px;white-space:pre-line;}
+  .svc-contact-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;}
+  .svc-contact-row a{flex:1;min-width:150px;text-align:center;padding:12px 14px;border-radius:8px;font-size:13.5px;font-weight:600;text-decoration:none;}
+  .svc-contact-row .whatsapp-btn{background:#25D366;color:#fff;}
+  .svc-contact-row .seller-btn{background:#fff;border:1px solid var(--stone-line);color:var(--ink);}
+  .svc-gallery-wrap{position:relative;margin-bottom:24px;}
+  .svc-gallery-wrap .svc-gallery{margin-bottom:0;}
+  .svc-gallery-overlay{position:absolute;bottom:10px;right:10px;display:flex;gap:8px;z-index:5;}
+  .svc-gallery-overlay a{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+  .svc-gallery-overlay .wa-circle{background:#25D366;color:#fff;}
+  .svc-gallery-overlay .link-circle{background:#fff;color:var(--ink);}
+  .svc-pickup-box{background:#FAF6EA;border:1px solid var(--stone-line);border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:13.5px;}
+  .svc-pickup-box b{display:block;margin-bottom:3px;}
+  .svc-not-found{text-align:center;padding:80px 24px;color:var(--text-mute);}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <div class="svc-wrap" id="svc-content" style="display:none;">
+    <div class="svc-gallery-wrap">
+      <div class="svc-gallery" id="svc-gallery"></div>
+      <div class="svc-gallery-overlay" id="svc-gallery-overlay"></div>
+    </div>
+
+    <div class="svc-zone-tag" id="svc-category"></div>
+    <h1 id="svc-name"></h1>
+    <div id="svc-rating-inline" style="margin-bottom:10px;"></div>
+
+    <div class="svc-price" id="svc-price"></div>
+    <div class="svc-desc" id="svc-desc"></div>
+
+    <div class="svc-contact-row" id="svc-contact-row"></div>
+    <div class="svc-pickup-box" id="svc-pickup-box" style="display:none;"></div>
+
+    <a class="btn btn-onlight" id="add-cart-btn" href="#" style="display:block;text-align:center;">Ajouter au panier</a>
+
+    <div class="svc-box" style="background:#fff;border:1px solid var(--stone-line);border-radius:10px;padding:22px;margin-top:24px;">
+      <h2 style="font-size:15px;margin-bottom:10px;">⭐ Avis clients</h2>
+      <div id="svc-reviews"></div>
+    </div>
+  </div>
+
+  <div class="svc-not-found" id="svc-not-found" style="display:none;">
+    <h1>Produit introuvable</h1>
+    <p>Ce produit n'existe plus ou le lien est incorrect.</p>
+  </div>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260815"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
+      if (!id){
+        document.getElementById("svc-not-found").style.display = "block";
+        return;
+      }
+
+      supaRequest("produits_golden?id=eq." + id + "&select=*").then(function(rows){
+        if (!rows || rows.length === 0){
+          document.getElementById("svc-not-found").style.display = "block";
+          return;
+        }
+        const d = rows[0];
+        const pdDisplayName = pickLang(d, "name", "name_en", "name_sw");
+        document.title = pdDisplayName + " — Agence Golden";
+        document.getElementById("svc-category").textContent = d.category || "Boutique";
+        document.getElementById("svc-name").textContent = pdDisplayName;
+        document.getElementById("svc-desc").textContent = pickLang(d, "description", "desc_en", "desc_sw");
+
+        loadRatingsSummary("produit").then(function(ratings){
+          const r = ratings[d.id];
+          document.getElementById("svc-rating-inline").innerHTML = renderStarsHtml(r && r.avg, r && r.count);
+        });
+        loadReviewWidget("produit", d.id, "svc-reviews");
+
+        const hasDiscount = d.discount_percent && d.discount_percent > 0;
+        const finalPrice = hasDiscount ? (d.price * (1 - d.discount_percent / 100)) : d.price;
+        document.getElementById("svc-price").innerHTML = finalPrice.toFixed(2) + " $" +
+          (hasDiscount ? '<span class="old">' + d.price.toFixed(2) + ' $</span>' : '');
+
+        const gallery = document.getElementById("svc-gallery");
+        if (d.images && d.images.length){
+          gallery.innerHTML = d.images.map(function(url){
+            return isVideoUrl(url)
+              ? '<video src="' + url + '" controls playsinline preload="metadata"></video>'
+              : '<img src="' + url + '" alt="' + esc(d.name) + '">';
+          }).join("");
+        } else {
+          gallery.classList.add("empty");
+          gallery.textContent = "Aucune photo pour ce produit.";
+        }
+
+        const contactRow = document.getElementById("svc-contact-row");
+        const galleryOverlay = document.getElementById("svc-gallery-overlay");
+        // Numéro WhatsApp de ce produit, ou celui de Golden par défaut si non renseigné
+        const waNumber = (d.contact_phone || GOLDEN_DEFAULT_WHATSAPP).replace(/[^0-9]/g, "");
+        const waMsg = encodeURIComponent("Bonjour, je suis intéressé(e) par : " + d.name);
+        let contactHtml = '<a class="whatsapp-btn" href="https://wa.me/' + waNumber + '?text=' + waMsg + '" target="_blank" rel="noopener">💬 WhatsApp</a>';
+        let overlayHtml = '<a class="wa-circle" href="https://wa.me/' + waNumber + '?text=' + waMsg + '" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>';
+        if (d.seller_link){
+          contactHtml += '<a class="seller-btn" href="' + esc(d.seller_link) + '" target="_blank" rel="noopener">🔗 Voir chez le vendeur</a>';
+          overlayHtml += '<a class="link-circle" href="' + esc(d.seller_link) + '" target="_blank" rel="noopener" aria-label="Voir le site">🔗</a>';
+        }
+        contactRow.innerHTML = contactHtml;
+        galleryOverlay.innerHTML = overlayHtml;
+
+        if (d.partner_name || d.pickup_address){
+          const pickupBox = document.getElementById("svc-pickup-box");
+          pickupBox.style.display = "block";
+          pickupBox.innerHTML =
+            (d.partner_name ? '<b>🤝 En collaboration avec ' + esc(d.partner_name) + '</b>' : '<b>📍 Retrait de la commande</b>') +
+            (d.pickup_address ? '<span>Adresse de retrait : ' + esc(d.pickup_address) + '</span>' : '');
+        }
+
+        document.getElementById("add-cart-btn").addEventListener("click", function(e){
+          e.preventDefault();
+          const thumb = (d.images && d.images[0]) ? d.images[0] : "";
+          addToCart({ id: d.id, name: d.name, price: finalPrice, image: thumb }, 1);
+          const btn = e.target;
+          btn.textContent = "Ajouté ✓";
+          setTimeout(function(){ btn.textContent = "Ajouter au panier"; }, 1500);
+        });
+
+        document.getElementById("svc-content").style.display = "block";
+      }).catch(function(err){
+        console.error(err);
+        document.getElementById("svc-not-found").style.display = "block";
+      });
+    });
+  </script>
+
+</body>
+</html>
