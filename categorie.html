@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catégorie — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260822">
+<style>
+  .cat-wrap{max-width:900px;margin:0 auto;padding:64px 20px 90px;}
+  .cat-wrap h1{font-size:26px;font-weight:600;text-align:center;margin-bottom:8px;}
+  .cat-wrap > p.lead{text-align:center;color:var(--text-mute);margin-bottom:36px;font-size:14.5px;}
+  .cat-group{margin-bottom:44px;}
+  .cat-group-title{font-size:17px;font-weight:700;color:var(--ink);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--stone-line);}
+  .cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  @media (min-width:640px){.cat-grid{grid-template-columns:repeat(4,1fr);}}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="cat-wrap">
+    <h1 data-i18n="nav_category">Catégorie</h1>
+    <p class="lead">Découvrez les produits publiés, classés par boutique partenaire.</p>
+    <div id="categorie-groups"><p class="cm-empty">Chargement...</p></div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260822"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", loadCategoriePage);
+
+    function loadCategoriePage(){
+      const box = document.getElementById("categorie-groups");
+      Promise.all([
+        supaRequest("produits_golden?select=id,name,name_en,name_es,name_it,name_sw,price,images,partner_name&order=created_at.desc"),
+        loadRatingsSummary("produit")
+      ]).then(function(results){
+        const rows = results[0] || [];
+        const ratings = results[1] || {};
+        if (rows.length === 0){
+          box.innerHTML = '<p class="cm-empty">Aucun produit publié pour le moment.</p>';
+          return;
+        }
+
+        // Regroupe par boutique partenaire (les produits sans partenaire vont dans "Boutique Golden")
+        const groups = {};
+        rows.forEach(function(d){
+          const key = (d.partner_name && d.partner_name.trim()) || "Boutique Golden";
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(d);
+        });
+
+        box.innerHTML = Object.keys(groups).sort().map(function(groupName){
+          const items = groups[groupName];
+          return '<div class="cat-group">' +
+            '<div class="cat-group-title">' + esc(groupName) + ' <span style="color:var(--text-mute);font-weight:400;">(' + items.length + ')</span></div>' +
+            '<div class="cat-grid">' +
+              items.map(function(d){
+                const thumb = (d.images && d.images[0]) ? d.images[0] : "";
+                const displayName = pickLang(d, "name", "name");
+                const r = ratings[d.id];
+                return '<a class="service-card" href="product-detail.html?id=' + d.id + '">' +
+                  (thumb ? '<img src="' + esc(thumb) + '" alt="' + esc(displayName) + '" loading="lazy">' : '<span class="service-card-noimg"></span>') +
+                  '<div class="service-card-body">' +
+                    '<div class="service-card-name">' + esc(displayName) + '</div>' +
+                    '<div class="service-card-rating">' + renderStarsHtml(r && r.avg, r && r.count) + '</div>' +
+                    (d.price ? '<div class="service-card-price">' + d.price.toFixed(2) + ' $</div>' : '') +
+                  '</div>' +
+                '</a>';
+              }).join("") +
+            '</div>' +
+          '</div>';
+        }).join("");
+      }).catch(function(err){
+        box.innerHTML = '<p class="cm-empty">Impossible de charger les catégories pour le moment.</p>';
+        console.error("Erreur page catégorie :", err);
+      });
+    }
+  </script>
+
+</body>
+</html>
