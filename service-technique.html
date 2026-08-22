@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Services Techniques — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260822b">
+<style>
+  .zone-content{max-width:900px;margin:0 auto;padding:56px 24px 90px;}
+  .zone-content h2{font-size:22px;font-weight:600;margin-bottom:6px;}
+  .zone-content .section-lead{color:var(--text-mute);font-size:14.5px;margin-bottom:6px;}
+  .comments-section{background:#fff;border:1px solid var(--stone-line);border-radius:10px;padding:24px;margin-top:50px;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <header class="zone-hero">
+    <h1 data-i18n="nav_zone_d">Services Techniques</h1>
+    <p data-i18n="page_zone_d_desc">Installation, réparation, maintenance et support technique — des professionnels qualifiés pour vos besoins du quotidien.</p>
+    <div class="zone-actions">
+      <a class="btn" href="mailto:goldenbusinessone@gmail.com?subject=Demande%20de%20renseignement%20-%20ZONE%20D%20Services%20Techniques" data-i18n="btn_quote">Demander un devis</a>
+      <button class="like-btn" id="like-btn"><span class="heart">🤍</span> J'aime <span id="like-count">0</span></button>
+    </div>
+  </header>
+
+  <div class="marquee">
+    <div class="marquee-track" id="marquee-d"><p class="cm-empty" style="color:#c9c4b6;padding:0 24px;">Chargement de la galerie…</p></div>
+  </div>
+
+  <section class="zone-content">
+    <h2>Nos services</h2>
+    <p class="section-lead">Choisissez un service pour voir le détail, le prix et les conditions.</p>
+    <div class="services-grid" id="services-d"></div>
+
+    <h2 style="margin-top:50px;">Nos réalisations</h2>
+    <p class="section-lead">Un aperçu de nos interventions techniques passées.</p>
+    <div class="realisations-grid" id="realisations-d"></div>
+
+    <div class="comments-section">
+      <h2 data-i18n="btn_comments" style="font-size:16px;">💬 Commentaires sur cette zone</h2>
+      <div class="comments-list" data-zone="ZONE D" id="zone-d-comments">Chargement des commentaires…</div>
+      <form class="comment-form" data-zone="ZONE D" data-label="Services Techniques">
+        <input class="cm-name" type="text" placeholder="Votre nom (optionnel)">
+        <div class="emoji-row">
+          <span onclick="insertEmoji(this)">👍</span><span onclick="insertEmoji(this)">❤️</span><span onclick="insertEmoji(this)">🔥</span><span onclick="insertEmoji(this)">😊</span><span onclick="insertEmoji(this)">🎉</span><span onclick="insertEmoji(this)">👏</span>
+        </div>
+        <textarea class="cm-text" placeholder="Écrire un commentaire..." required></textarea>
+        <button type="submit" class="btn btn-onlight btn-sm" data-i18n="btn_send">Publier</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260822"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      loadServicesGrid("ZONE D", "services-d");
+      loadRealisationsMarquee("ZONE D", "marquee-d");
+      loadRealisationsList("ZONE D", "realisations-d");
+      setupZoneLike("ZONE D", "like-btn", "like-count");
+      // Les commentaires de cette zone sont chargés/envoyés automatiquement
+      // par script.js (via la classe .comments-list / .comment-form ci-dessus).
+    });
+  </script>
+
+</body>
+</html>
