@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golden Académie — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260822f">
+<style>
+  .aca-wrap{max-width:900px;margin:0 auto;padding:64px 20px 90px;}
+  .aca-wrap h1{font-size:26px;font-weight:600;text-align:center;margin-bottom:8px;}
+  .aca-wrap > p.lead{text-align:center;color:var(--text-mute);margin-bottom:36px;font-size:14.5px;}
+  .aca-grid{display:grid;grid-template-columns:1fr;gap:16px;}
+  @media (min-width:640px){.aca-grid{grid-template-columns:repeat(2,1fr);}}
+  .aca-card{background:#fff;border:1px solid var(--stone-line);border-radius:12px;overflow:hidden;}
+  .aca-card img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#EDEAE0;}
+  .aca-card-body{padding:16px;}
+  .aca-card-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+  .aca-card-meta{font-size:12px;color:var(--gold-dark,var(--gold));font-weight:600;margin-bottom:8px;}
+  .aca-card-desc{font-size:13.5px;color:var(--text-mute);margin-bottom:12px;}
+  .aca-card-price{font-size:15px;font-weight:700;margin-bottom:12px;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="aca-wrap">
+    <h1 data-i18n="academie_title">🎓 Golden Académie</h1>
+    <p class="lead" data-i18n="academie_lead">Nos formations en ligne pour développer tes compétences avec Golden.</p>
+    <div id="academie-grid" class="aca-grid"><p class="cm-empty">Chargement...</p></div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260822f"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      const grid = document.getElementById("academie-grid");
+      supaRequest("formations_golden?is_public=eq.true&order=created_at.desc")
+        .then(function(rows){
+          if (!rows || rows.length === 0){
+            grid.innerHTML = '<p class="cm-empty">Aucune formation publiée pour le moment.</p>';
+            return;
+          }
+          grid.innerHTML = rows.map(function(f){
+            const title = pickLang(f, "title", "title");
+            const desc = pickLang(f, "description", "desc");
+            const waMsg = encodeURIComponent("Bonjour, je suis intéressé(e) par la formation : " + title);
+            return '<div class="aca-card">' +
+              (f.thumbnail_url ? '<img src="' + esc(f.thumbnail_url) + '" alt="' + esc(title) + '">' : '') +
+              '<div class="aca-card-body">' +
+                '<div class="aca-card-title">' + esc(title) + '</div>' +
+                '<div class="aca-card-meta">' + (f.level ? esc(f.level) : "") + (f.level && f.duration ? " · " : "") + (f.duration ? esc(f.duration) : "") + '</div>' +
+                (desc ? '<div class="aca-card-desc">' + esc(desc) + '</div>' : '') +
+                (f.price ? '<div class="aca-card-price">' + (typeof f.price === "number" ? f.price.toFixed(2) + " $" : f.price) + '</div>' : '<div class="aca-card-price">Gratuit</div>') +
+                '<a class="btn btn-onlight" href="https://wa.me/243835531774?text=' + waMsg + '" target="_blank" rel="noopener" style="display:block;text-align:center;">S\'inscrire</a>' +
+              '</div>' +
+            '</div>';
+          }).join("");
+        })
+        .catch(function(err){
+          grid.innerHTML = '<p class="cm-empty">Formations momentanément indisponibles.</p>';
+          console.error("Erreur académie :", err);
+        });
+    });
+  </script>
+
+</body>
+</html>
