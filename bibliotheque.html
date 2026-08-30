@@ -503,14 +503,42 @@
       libCanvas.on("object:removed", renderLayersList);
 
       // ---- Fond du canevas : couleur ou transparent ----
+      // (le fond réellement transparent n'est appliqué qu'à l'export/sauvegarde
+      // — l'affichage à l'écran reste sur un damier gris clair, plus fiable sur mobile)
+      let isTransparentBg = false;
       document.getElementById("bg-color-picker").addEventListener("input", function(){
+        isTransparentBg = false;
         libCanvas.backgroundColor = this.value;
         libCanvas.requestRenderAll();
       });
       document.getElementById("bg-transparent-btn").addEventListener("click", function(){
-        libCanvas.backgroundColor = null;
+        isTransparentBg = true;
+        libCanvas.backgroundColor = makeCheckerboardPattern();
         libCanvas.requestRenderAll();
       });
+
+      function makeCheckerboardPattern(){
+        const patternCanvas = document.createElement("canvas");
+        patternCanvas.width = 20; patternCanvas.height = 20;
+        const ctx = patternCanvas.getContext("2d");
+        ctx.fillStyle = "#f0f0f0"; ctx.fillRect(0, 0, 20, 20);
+        ctx.fillStyle = "#d8d8d8";
+        ctx.fillRect(0, 0, 10, 10);
+        ctx.fillRect(10, 10, 10, 10);
+        return new fabric.Pattern({ source: patternCanvas, repeat: "repeat" });
+      }
+
+      // Bascule vers un fond réellement transparent juste le temps de produire
+      // l'image finale (export, sauvegarde, publication), puis restaure l'aperçu.
+      function withRealBackgroundForExport(callback){
+        const previousBg = libCanvas.backgroundColor;
+        if (isTransparentBg) libCanvas.backgroundColor = null;
+        libCanvas.renderAll();
+        const result = callback();
+        libCanvas.backgroundColor = previousBg;
+        libCanvas.renderAll();
+        return result;
+      }
 
       document.getElementById("bring-front").addEventListener("click", function(){
         const obj = libCanvas.getActiveObject();
@@ -721,7 +749,7 @@
       });
 
       document.getElementById("export-btn").addEventListener("click", function(){
-        const dataUrl = libCanvas.toDataURL({ format: "png", quality: 1 });
+        const dataUrl = withRealBackgroundForExport(function(){ return libCanvas.toDataURL({ format: "png", quality: 1 }); });
         const a = document.createElement("a");
         a.href = dataUrl;
         a.download = (document.getElementById("creation-title").value.trim() || "creation-golden") + ".png";
@@ -825,7 +853,7 @@
       status.textContent = "Publication...";
 
       const canvasJson = libCanvas.toJSON();
-      const thumbDataUrl = libCanvas.toDataURL({ format: "png", quality: 0.8, multiplier: 0.5 });
+      const thumbDataUrl = withRealBackgroundForExport(function(){ return libCanvas.toDataURL({ format: "png", quality: 0.8, multiplier: 0.5 }); });
 
       fetch(thumbDataUrl).then(function(r){ return r.blob(); }).then(function(blob){
         const file = new File([blob], "template-" + Date.now() + ".png", { type: "image/png" });
@@ -853,7 +881,7 @@
       status.textContent = "Sauvegarde...";
 
       const canvasJson = libCanvas.toJSON();
-      const thumbDataUrl = libCanvas.toDataURL({ format: "png", quality: 0.8, multiplier: 0.5 });
+      const thumbDataUrl = withRealBackgroundForExport(function(){ return libCanvas.toDataURL({ format: "png", quality: 0.8, multiplier: 0.5 }); });
 
       fetch(thumbDataUrl).then(function(r){ return r.blob(); }).then(function(blob){
         const file = new File([blob], "thumb-" + Date.now() + ".png", { type: "image/png" });
