@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bibliothèque — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260822f">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<style>
+  .lib-wrap{max-width:1100px;margin:0 auto;padding:16px 0 60px;}
+  .lib-wrap > h1, .lib-wrap > p, .lib-wrap > .lib-login-gate,
+  .lib-wrap > #editor-area > h2, .lib-wrap > #editor-area > .gallery-grid,
+  .lib-wrap > #editor-area > .my-creations-grid{ padding-left:16px; padding-right:16px; }
+
+  /* ===== Coquille éditeur façon PixelLab : hauteur FIXE, entête + canevas + barre basse toujours visibles,
+     le canevas se met à l'échelle pour tenir dans l'espace dispo (jamais besoin de scroller la page) ===== */
+  .lib-editor-shell{
+    display:flex;flex-direction:column;
+    height:min(74vh,620px);min-height:400px;
+    background:#100f0c;
+  }
+  .lib-topbar{
+    display:flex;align-items:center;gap:6px;overflow-x:auto;flex:none;
+    background:#1c1a16;padding:10px 12px;
+    border-bottom:1px solid #3a382f;
+  }
+  .lib-topbar button, .lib-topbar select{
+    background:#2a2620;border:1px solid #3a382f;border-radius:8px;padding:8px 10px;
+    font-size:12.5px;font-weight:600;cursor:pointer;color:#e8e4d8;flex:none;
+  }
+  .lib-topbar button:hover{background:var(--gold);color:var(--ink);border-color:var(--gold);}
+  .lib-topbar button:disabled{opacity:.35;cursor:default;background:#2a2620;color:#e8e4d8;}
+  .lib-topbar button.danger:hover{background:#c85a5a;color:#fff;border-color:#c85a5a;}
+  .lib-topbar-sep{width:1px;height:22px;background:#3a382f;margin:0 2px;flex:none;}
+  .lib-topbar-spacer{flex:1;}
+
+  /* barre basse : rangée 1 = sous-outils contextuels, rangée 2 = onglets (comme PixelLab) */
+  .lib-bottombar{
+    flex:none;background:#1c1a16;border-top:1px solid #3a382f;
+  }
+  .lib-subpanel{
+    display:none;flex-wrap:wrap;gap:10px;align-items:center;padding:12px;
+    max-height:150px;overflow-y:auto;
+  }
+  .lib-subpanel.active{display:flex;}
+  .lib-subpanel button, .lib-subpanel select{
+    background:#2a2620;border:1px solid #3a382f;border-radius:8px;padding:9px 12px;
+    font-size:13px;font-weight:600;cursor:pointer;color:#e8e4d8;
+  }
+  .lib-subpanel button:hover{background:var(--gold);color:var(--ink);border-color:var(--gold);}
+  .lib-subpanel input[type=color]{width:36px;height:36px;border:1px solid #3a382f;border-radius:8px;padding:2px;cursor:pointer;background:#2a2620;}
+  .lib-subpanel input[type=range]{width:110px;}
+  .lib-subpanel label{font-size:11.5px;color:#a9a496;display:flex;align-items:center;gap:6px;}
+  .lib-tabbar{display:flex;flex:none;}
+  .lib-tabbar button{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+    background:none;border:none;border-top:2px solid transparent;border-radius:0;
+    padding:9px 4px 8px;font-size:10px;font-weight:600;color:#a9a496;cursor:pointer;
+  }
+  .lib-tabbar button.active{color:var(--gold-light,var(--gold));border-top-color:var(--gold);background:rgba(201,162,39,.08);}
+  .lib-tabbar button .tab-icon{font-size:19px;line-height:1;}
+
+  .shape-grid{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:6px;width:100%;
+  }
+
+  .shape-grid button{padding:8px;font-size:18px;display:flex;align-items:center;justify-content:center;}
+  .filter-panel{ width:100%; }
+  .ai-gen-overlay{
+    display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.55);
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .ai-gen-overlay.open{display:flex;}
+  .ai-gen-box{
+    background:#1c1a16;border:1px solid #3a382f;border-radius:14px;padding:24px;
+    max-width:420px;width:100%;color:#e8e4d8;
+  }
+  .ai-gen-box h3{font-family:'Fraunces',serif;color:var(--gold-light);font-size:18px;margin-bottom:4px;}
+  .ai-gen-box p{font-size:12.5px;color:#a9a496;margin-bottom:14px;}
+  .ai-gen-box textarea{
+    width:100%;min-height:80px;border-radius:8px;border:1px solid #3a382f;background:#2a2620;
+    color:#e8e4d8;padding:10px 12px;font-family:'Inter',sans-serif;font-size:14px;resize:vertical;
+  }
+  .ai-gen-box .ai-gen-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;}
+  .ai-gen-box button{border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;}
+  .ai-gen-cancel{background:none;color:#a9a496;}
+  .ai-gen-submit{background:var(--gold);color:var(--ink);}
+  .ai-gen-loading{display:none;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--gold-light);}
+  .ai-gen-loading.show{display:flex;}
+  .ai-gen-spinner{width:18px;height:18px;border:2px solid #3a382f;border-top-color:var(--gold);border-radius:50%;animation:aiSpin .8s linear infinite;}
+  @keyframes aiSpin{to{transform:rotate(360deg);}}
+  .filter-panel label{font-size:12px;color:var(--text-mute);display:flex;flex-direction:column;gap:4px;min-width:120px;}
+  .layer-item{
+    display:flex;align-items:center;gap:8px;background:#2a2620;border-radius:8px;padding:8px 10px;cursor:pointer;
+  }
+  .layer-item.active{background:var(--gold);color:var(--ink);}
+  .layer-item span.layer-name{flex:1;font-size:12.5px;color:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .layer-item button{background:none;border:none;color:inherit;cursor:pointer;font-size:14px;padding:2px 4px;}
+  .gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px;}
+  @media (min-width:640px){.gallery-grid{grid-template-columns:repeat(4,1fr);}}
+  .gallery-card{background:#fff;border:1px solid var(--stone-line);border-radius:10px;overflow:hidden;}
+  .gallery-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#EDEAE0;}
+  .gallery-card-body{padding:10px;}
+  .gallery-card-title{font-size:12.5px;font-weight:600;margin-bottom:6px;}
+  .gallery-card-badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:6px;}
+  .gallery-card-badge.free{background:#e3f3df;color:#3f7a34;}
+  .gallery-card-badge.premium{background:#FAF0D0;color:#8a6d1a;}
+  .lib-canvas-area{background:#EDEAE0;padding:14px;display:flex;justify-content:center;align-items:center;flex:1;min-height:0;overflow:hidden;}
+  .lib-canvas-area canvas{box-shadow:0 10px 30px rgba(0,0,0,.15);}
+  .lib-save-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center;}
+  .lib-save-row input[type=text]{flex:1;min-width:160px;border:1px solid var(--stone-line);border-radius:6px;padding:10px 12px;font-size:14px;}
+  .lib-status{font-size:12.5px;color:var(--gold);margin-left:6px;}
+  .lib-login-gate{background:#FAF6EA;border:1px dashed var(--stone-line);border-radius:10px;padding:26px 22px;text-align:center;margin-bottom:20px;}
+  .my-creations-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:30px;}
+  @media (min-width:640px){.my-creations-grid{grid-template-columns:repeat(4,1fr);}}
+  .creation-card{background:#fff;border:1px solid var(--stone-line);border-radius:10px;overflow:hidden;cursor:pointer;}
+  .creation-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#EDEAE0;}
+  .creation-card .cc-title{padding:8px 10px;font-size:12.5px;font-weight:600;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="lib-wrap">
+    <h1 style="font-size:24px;font-weight:600;text-align:center;margin-bottom:6px;">📚 Bibliothèque Golden</h1>
+    <p style="text-align:center;color:var(--text-mute);font-size:14px;margin-bottom:24px;">Crée ton affiche, ton design, ta création — comme tu veux.</p>
+
+    <div class="lib-login-gate" id="login-gate">
+      <p style="color:var(--text-mute);margin-bottom:16px;">🔒 Connecte-toi à ton compte Golden pour créer et sauvegarder tes designs.</p>
+      <a href="compte.html" class="btn btn-onlight">Se connecter</a>
+    </div>
+
+    <div id="editor-area" style="display:none;">
+      <div class="lib-editor-shell">
+
+        <!-- Barre du haut, façon PixelLab : annuler/rétablir, format, ordre des calques, actions destructrices -->
+        <div class="lib-topbar">
+          <button type="button" id="undo-btn" title="Annuler">↩️</button>
+          <button type="button" id="redo-btn" title="Rétablir">↪️</button>
+          <div class="lib-topbar-sep"></div>
+          <select id="page-format">
+            <option value="600x800">Portrait (600×800)</option>
+            <option value="1080x1080">Post carré (1080×1080)</option>
+            <option value="1080x1920">Story (1080×1920)</option>
+            <option value="1200x628">Bannière FB (1200×628)</option>
+            <option value="595x842">Affiche A4 (595×842)</option>
+          </select>
+          <div class="lib-topbar-spacer"></div>
+          <button type="button" id="bring-front" title="Avant-plan">⬆️</button>
+          <button type="button" id="send-back" title="Arrière-plan">⬇️</button>
+          <button type="button" id="delete-obj" class="danger" title="Supprimer">🗑️</button>
+          <button type="button" id="clear-canvas" class="danger" title="Tout effacer">✖️</button>
+        </div>
+
+        <div class="lib-canvas-area">
+          <canvas id="lib-canvas" width="600" height="800"></canvas>
+        </div>
+
+        <!-- Barre du bas à 2 rangées, façon PixelLab : sous-outils contextuels puis onglets -->
+        <div class="lib-bottombar">
+
+          <div class="lib-subpanel" id="tabpanel-couleur" data-tabpanel="couleur">
+            <label>Couleur de l'objet <input type="color" id="color-picker" value="#C9A227"></label>
+            <label>Fond du canevas <input type="color" id="bg-color-picker" value="#ffffff"></label>
+            <button type="button" id="bg-transparent-btn">🔲 Transparent</button>
+          </div>
+
+          <div class="lib-subpanel" id="tabpanel-texte" data-tabpanel="texte">
+            <button type="button" id="add-text">+ Ajouter un texte</button>
+            <select id="font-picker">
+              <option value="Inter">Inter</option>
+              <option value="Fraunces">Fraunces (élégant)</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Arial">Arial</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Impact">Impact</option>
+              <option value="cursive">Cursive</option>
+            </select>
+            <label>Taille <input type="range" id="size-slider" min="10" max="120" value="28"></label>
+          </div>
+
+          <div class="lib-subpanel" id="tabpanel-formes" data-tabpanel="formes">
+            <div class="shape-grid" id="shape-menu-list"></div>
+          </div>
+
+          <div class="lib-subpanel" id="tabpanel-image" data-tabpanel="image">
+            <button type="button" id="add-image-btn">🖼️ Importer une image</button>
+            <input type="file" id="add-image-input" accept="image/*" style="display:none;">
+            <button type="button" id="ai-generate-btn" style="background:#2f6fed;color:#fff;border-color:#2f6fed;">🤖 Générer avec IA</button>
+          </div>
+
+          <div class="lib-subpanel" id="tabpanel-calques" data-tabpanel="calques" style="flex-direction:column;align-items:stretch;">
+            <div id="layers-list" style="display:flex;flex-direction:column;gap:4px;width:100%;"></div>
+          </div>
+
+          <div class="lib-subpanel filter-panel" id="tabpanel-effets" data-tabpanel="effets">
+            <div class="filter-presets" id="filter-presets" style="display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-bottom:6px;">
+              <button type="button" data-preset="none" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Original</button>
+              <button type="button" data-preset="bw" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Noir &amp; Blanc</button>
+              <button type="button" data-preset="sepia" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Sépia</button>
+              <button type="button" data-preset="vivid" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Vif</button>
+              <button type="button" data-preset="cool" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Froid</button>
+              <button type="button" data-preset="warm" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Chaud</button>
+              <button type="button" data-preset="vintage" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Vintage</button>
+              <button type="button" data-preset="soft" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Adouci</button>
+              <button type="button" data-preset="invert" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Inversé</button>
+              <button type="button" data-preset="vignette" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Vignette</button>
+              <button type="button" data-preset="grain" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Grain</button>
+            </div>
+            <label>Luminosité <input type="range" id="filter-brightness" min="-100" max="100" value="0"></label>
+            <label>Contraste <input type="range" id="filter-contrast" min="-100" max="100" value="0"></label>
+            <label>Saturation <input type="range" id="filter-saturation" min="-100" max="100" value="0"></label>
+            <label>Netteté <input type="checkbox" id="filter-sharpen"></label>
+            <button type="button" id="filter-reset" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);align-self:flex-end;padding:8px 14px;border-radius:6px;font-size:12.5px;">Réinitialiser</button>
+
+            <div style="width:100%;border-top:1px solid #3a382f;margin-top:10px;padding-top:10px;">
+              <p style="font-size:11.5px;color:#a9a496;margin-bottom:8px;">✨ Retouche par IA (peau, qualité, imperfections)</p>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <button type="button" class="ai-retouch-btn" data-retouch="peau" style="background:#2f6fed;color:#fff;border:none;border-radius:16px;padding:7px 14px;font-size:12px;cursor:pointer;">🧴 Adoucir la peau</button>
+                <button type="button" class="ai-retouch-btn" data-retouch="boutons" style="background:#2f6fed;color:#fff;border:none;border-radius:16px;padding:7px 14px;font-size:12px;cursor:pointer;">✨ Effacer boutons/taches</button>
+                <button type="button" class="ai-retouch-btn" data-retouch="pro" style="background:#2f6fed;color:#fff;border:none;border-radius:16px;padding:7px 14px;font-size:12px;cursor:pointer;">📸 Qualité professionnelle</button>
+                <button type="button" class="ai-retouch-btn" data-retouch="eclat" style="background:#2f6fed;color:#fff;border:none;border-radius:16px;padding:7px 14px;font-size:12px;cursor:pointer;">💡 Éclat &amp; couleurs</button>
+              </div>
+              <div class="ai-gen-loading" id="ai-retouch-loading" style="color:#2f6fed;"><span class="ai-gen-spinner" style="border-top-color:#2f6fed;"></span> Retouche en cours (10-20 secondes)...</div>
+            </div>
+          </div>
+
+          <div class="lib-tabbar" id="lib-tabbar">
+            <button type="button" data-tab="couleur"><span class="tab-icon">🎨</span>Couleur</button>
+            <button type="button" data-tab="texte"><span class="tab-icon">🔤</span>Texte</button>
+            <button type="button" data-tab="formes"><span class="tab-icon">🔷</span>Formes</button>
+            <button type="button" data-tab="image"><span class="tab-icon">🖼️</span>Image</button>
+            <button type="button" id="layers-toggle" data-tab="calques"><span class="tab-icon">🗂️</span>Calques</button>
+            <button type="button" data-tab="effets"><span class="tab-icon">✨</span>Effets</button>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="lib-save-row" style="padding-left:16px;padding-right:16px;">
+        <input type="text" id="creation-title" placeholder="Titre de ta création (ex : Affiche promo été)">
+        <button type="button" class="btn btn-onlight" id="save-btn">💾 Sauvegarder</button>
+        <button type="button" class="btn btn-onlight" id="export-btn" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);">⬇️ Télécharger en image</button>
+        <span id="publish-row" style="display:none;align-items:center;gap:8px;">
+          <label style="font-size:12.5px;color:var(--text-mute);display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="publish-premium"> Premium
+          </label>
+          <input type="number" id="publish-price" placeholder="Prix $" style="width:70px;border:1px solid var(--stone-line);border-radius:6px;padding:8px;display:none;">
+          <button type="button" class="btn btn-onlight" id="publish-btn" style="background:#2f6fed;border-color:#2f6fed;">📤 Publier dans la bibliothèque</button>
+        </span>
+        <span class="lib-status" id="lib-status" style="display:none;"></span>
+      </div>
+
+      <h2 style="font-size:16px;margin-top:36px;margin-bottom:6px;">🖼️ Galerie de modèles</h2>
+      <p style="font-size:12.5px;color:var(--text-mute);">Des designs déjà commencés (par Golden ou d'autres créateurs) — choisis-en un pour le personnaliser.</p>
+      <div class="gallery-grid" id="gallery-grid"></div>
+
+      <h2 style="font-size:16px;margin-top:36px;margin-bottom:6px;">🗂️ Mes créations</h2>
+      <div class="my-creations-grid" id="my-creations-grid"></div>
+    </div>
+  </section>
+
+  <!-- Fenêtre de génération d'image par IA -->
+  <div class="ai-gen-overlay" id="ai-gen-overlay">
+    <div class="ai-gen-box">
+      <h3>🤖 Générer une image avec l'IA</h3>
+      <p>Décris ce que tu veux (style, couleurs, ambiance) — plus c'est précis, meilleur est le résultat.</p>
+      <textarea id="ai-gen-prompt" placeholder="Ex : logo moderne pour une agence événementielle, style doré et noir, minimaliste"></textarea>
+      <div class="ai-gen-loading" id="ai-gen-loading"><span class="ai-gen-spinner"></span> Génération en cours (10-20 secondes)...</div>
+      <div class="ai-gen-actions">
+        <button type="button" class="ai-gen-cancel" id="ai-gen-cancel">Annuler</button>
+        <button type="button" class="ai-gen-submit" id="ai-gen-submit">✨ Générer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260830"></script>
+  <script>
+    let libCanvas = null;
+    let currentCreationId = null;
+    let undoStack = [];
+    let redoStack = [];
+    let restoringState = false;
+    let logicalCanvasW = 600, logicalCanvasH = 800; // taille "réelle" de la création (indépendante de l'affichage)
+    const isAdmin = false; // recalculé après connexion, voir initEditor
+
+    document.addEventListener("DOMContentLoaded", function(){
+      if (!isClientLoggedIn()){
+        document.getElementById("login-gate").style.display = "block";
+        document.getElementById("editor-area").style.display = "none";
+        return;
+      }
+      document.getElementById("login-gate").style.display = "none";
+      document.getElementById("editor-area").style.display = "block";
+      initEditor();
+    });
+
+    // ---- 10 formes prêtes à l'emploi, façon banque de formes ----
+    const GOLDEN_SHAPES = [
+      { icon: "▭", name: "rect", make: function(c){ return new fabric.Rect({ width: 140, height: 100, fill: c }); } },
+      { icon: "▢", name: "rounded", make: function(c){ return new fabric.Rect({ width: 140, height: 100, fill: c, rx: 18, ry: 18 }); } },
+      { icon: "◯", name: "ring", make: function(c){ return new fabric.Circle({ radius: 60, fill: "transparent", stroke: c, strokeWidth: 8 }); } },
+      { icon: "⬭", name: "ellipse", make: function(c){ return new fabric.Ellipse({ rx: 80, ry: 50, fill: c }); } },
+      { icon: "―", name: "line", make: function(c){ return new fabric.Line([0,0,160,0], { stroke: c, strokeWidth: 6 }); } },
+      { icon: "❤️", name: "coeur", make: function(c){ return makeHeart(c); } },
+      { icon: "✚", name: "croix", make: function(c){ return makeCross(c); } },
+      { icon: "💬", name: "bulle", make: function(c){ return makeSpeechBubble(c); } },
+      { icon: "🎗️", name: "ruban", make: function(c){ return makeRibbon(c); } }
+    ];
+    // Polygones réguliers de 3 à 12 côtés (triangle, carré-losange, pentagone... dodécagone)
+    const polygonIcons = ["▲","◆","⬠","⬡","⭘","⭘","⭘","⭘","⭘","⭘"];
+    for (let sides = 3; sides <= 12; sides++){
+      GOLDEN_SHAPES.push({
+        icon: polygonIcons[sides - 3] || "⬣",
+        name: "polygone-" + sides,
+        make: (function(n){ return function(c){ return makePolygon(n, 65, c); }; })(sides)
+      });
+    }
+    // Étoiles à 5, 6, 8, 10 et 12 branches
+    [5, 6, 8, 10, 12].forEach(function(points){
+      GOLDEN_SHAPES.push({
+        icon: "★",
+        name: "etoile-" + points,
+        make: (function(p){ return function(c){ return makeStar(c, p); }; })(points)
+      });
+    });
+    // Flèches dans les 4 directions
+    [0, 90, 180, 270].forEach(function(angle){
+      const icons = { 0: "➜", 90: "⬇️", 180: "⬅️", 270: "⬆️" };
+      GOLDEN_SHAPES.push({
+        icon: icons[angle],
+        name: "fleche-" + angle,
+        make: (function(a){ return function(c){ const arrow = makeArrow(c); arrow.set({ angle: a }); return arrow; }; })(angle)
+      });
+    });
+
+    function makePolygon(sides, radius, color){
+      const points = [];
+      for (let i = 0; i < sides; i++){
+        const angle = (Math.PI * 2 * i) / sides - Math.PI / 2;
+        points.push({ x: radius + radius * Math.cos(angle), y: radius + radius * Math.sin(angle) });
+      }
+      return new fabric.Polygon(points, { fill: color });
+    }
+    function makeStar(color, spikes){
+      spikes = spikes || 5;
+      const points = [];
+      const outer = 65, inner = outer * 0.42;
+      for (let i = 0; i < spikes * 2; i++){
+        const r = i % 2 === 0 ? outer : inner;
+        const angle = (Math.PI * i) / spikes - Math.PI / 2;
+        points.push({ x: outer + r * Math.cos(angle), y: outer + r * Math.sin(angle) });
+      }
+      return new fabric.Polygon(points, { fill: color });
+    }
+    function makeArrow(color){
+      const points = [
+        {x:0,y:20},{x:80,y:20},{x:80,y:0},{x:130,y:35},{x:80,y:70},{x:80,y:50},{x:0,y:50}
+      ];
+      return new fabric.Polygon(points, { fill: color });
+    }
+    function makeHeart(color){
+      return new fabric.Path("M 65 25 C 55 5, 20 5, 20 35 C 20 60, 65 90, 65 90 C 65 90, 110 60, 110 35 C 110 5, 75 5, 65 25 Z", { fill: color });
+    }
+    function makeCross(color){
+      const points = [
+        {x:40,y:0},{x:80,y:0},{x:80,y:40},{x:120,y:40},{x:120,y:80},{x:80,y:80},
+        {x:80,y:120},{x:40,y:120},{x:40,y:80},{x:0,y:80},{x:0,y:40},{x:40,y:40}
+      ];
+      return new fabric.Polygon(points, { fill: color });
+    }
+    function makeSpeechBubble(color){
+      return new fabric.Path("M 10 10 H 130 A 10 10 0 0 1 140 20 V 80 A 10 10 0 0 1 130 90 H 50 L 25 110 L 30 90 H 20 A 10 10 0 0 1 10 80 V 20 A 10 10 0 0 1 10 10 Z", { fill: color });
+    }
+    function makeRibbon(color){
+      const points = [
+        {x:0,y:0},{x:100,y:0},{x:100,y:90},{x:50,y:65},{x:0,y:90}
+      ];
+      return new fabric.Polygon(points, { fill: color });
+    }
+
+    function initEditor(){
+      libCanvas = new fabric.Canvas("lib-canvas", {
+        backgroundColor: "#ffffff",
+        selection: false,        // pas de rectangle de sélection au glissé sur l'espace vide
+        allowTouchScrolling: true // au doigt, si on ne touche aucun élément, on laisse la page scroller normalement
+      });
+      fitCanvasToContainer();
+      window.addEventListener("resize", debounce(fitCanvasToContainer, 150));
+
+      // ---- Adapte l'affichage du canevas à l'espace disponible, SANS jamais faire
+      // déborder la page : la "vraie" taille de la création (logicalCanvasW/H) reste
+      // celle du format choisi, seul le zoom d'affichage change. ----
+      function fitCanvasToContainer(){
+        const area = document.querySelector(".lib-canvas-area");
+        if (!area) return;
+        const availW = Math.max(area.clientWidth - 28, 40);
+        const availH = Math.max(area.clientHeight - 28, 40);
+        const scale = Math.min(availW / logicalCanvasW, availH / logicalCanvasH, 1);
+        libCanvas.setZoom(scale);
+        libCanvas.setDimensions({ width: logicalCanvasW * scale, height: logicalCanvasH * scale });
+        libCanvas.requestRenderAll();
+      }
+      function debounce(fn, delay){
+        let t;
+        return function(){ clearTimeout(t); t = setTimeout(fn, delay); };
+      }
+
+      // ---- Barre du bas façon PixelLab : un seul onglet ouvert à la fois ----
+      let activeEditorTab = null;
+      function showEditorTab(name){
+        activeEditorTab = name;
+        document.querySelectorAll(".lib-subpanel").forEach(function(panel){
+          panel.classList.toggle("active", panel.dataset.tabpanel === name);
+        });
+        document.querySelectorAll("#lib-tabbar button").forEach(function(btn){
+          btn.classList.toggle("active", btn.dataset.tab === name);
+        });
+        if (name === "calques") renderLayersList();
+        // Ouvrir/fermer le panneau change la hauteur dispo pour le canevas — on réajuste après le reflow.
+        setTimeout(fitCanvasToContainer, 0);
+      }
+      document.getElementById("lib-tabbar").addEventListener("click", function(e){
+        const btn = e.target.closest("button[data-tab]");
+        if (!btn) return;
+        // Un second clic sur l'onglet déjà actif referme le panneau (comme un accordéon)
+        showEditorTab(activeEditorTab === btn.dataset.tab ? null : btn.dataset.tab);
+      });
+
+      // ---- Menu de formes (grille statique dans l'onglet "Formes") ----
+      const shapeList = document.getElementById("shape-menu-list");
+      shapeList.innerHTML = GOLDEN_SHAPES.map(function(s, i){
+        return '<button type="button" data-shape="' + i + '" title="' + s.name + '">' + s.icon + '</button>';
+      }).join("");
+      shapeList.addEventListener("click", function(e){
+        const btn = e.target.closest("button[data-shape]");
+        if (!btn) return;
+        const shape = GOLDEN_SHAPES[parseInt(btn.dataset.shape, 10)];
+        const color = document.getElementById("color-picker").value;
+        const obj = shape.make(color);
+        obj.set({ left: 90, top: 90 });
+        libCanvas.add(obj).setActiveObject(obj);
+      });
+
+      document.getElementById("add-text").addEventListener("click", function(){
+        const size = parseInt(document.getElementById("size-slider").value, 10);
+        const color = document.getElementById("color-picker").value;
+        const font = document.getElementById("font-picker").value;
+        const text = new fabric.IText("Ton texte ici", { left: 80, top: 80, fontSize: size, fill: color, fontFamily: font });
+        libCanvas.add(text).setActiveObject(text);
+        text.enterEditing();
+        text.selectAll();
+      });
+
+      document.getElementById("font-picker").addEventListener("change", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj && obj.type === "i-text"){ obj.set("fontFamily", this.value); libCanvas.requestRenderAll(); }
+      });
+
+      document.getElementById("add-image-btn").addEventListener("click", function(){
+        document.getElementById("add-image-input").click();
+      });
+      document.getElementById("add-image-input").addEventListener("change", function(e){
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev){
+          fabric.Image.fromURL(ev.target.result, function(img){
+            img.scaleToWidth(220);
+            img.set({ left: 60, top: 60 });
+            libCanvas.add(img).setActiveObject(img);
+          });
+        };
+        reader.readAsDataURL(file);
+        e.target.value = "";
+      });
+
+      // ---- Génération d'image par IA (Gemini) — fenêtre dédiée ----
+      const aiOverlay = document.getElementById("ai-gen-overlay");
+      const aiPromptField = document.getElementById("ai-gen-prompt");
+      const aiLoading = document.getElementById("ai-gen-loading");
+      const aiSubmit = document.getElementById("ai-gen-submit");
+
+      document.getElementById("ai-generate-btn").addEventListener("click", function(){
+        aiPromptField.value = "";
+        aiLoading.classList.remove("show");
+        aiOverlay.classList.add("open");
+        aiPromptField.focus();
+      });
+      document.getElementById("ai-gen-cancel").addEventListener("click", function(){
+        aiOverlay.classList.remove("open");
+      });
+      aiOverlay.addEventListener("click", function(e){
+        if (e.target === aiOverlay) aiOverlay.classList.remove("open");
+      });
+
+      aiSubmit.addEventListener("click", function(){
+        const description = aiPromptField.value.trim();
+        if (!description) return;
+
+        aiLoading.classList.add("show");
+        aiSubmit.disabled = true;
+
+        generateGoldenAIImage(description).then(function(dataUrl){
+          fabric.Image.fromURL(dataUrl, function(img){
+            img.scaleToWidth(280);
+            img.set({ left: 60, top: 60 });
+            libCanvas.add(img).setActiveObject(img);
+            aiOverlay.classList.remove("open");
+            aiLoading.classList.remove("show");
+            aiSubmit.disabled = false;
+          });
+        }).catch(function(err){
+          aiLoading.classList.remove("show");
+          aiSubmit.disabled = false;
+          alert("Erreur : " + err.message);
+        });
+      });
+
+      document.getElementById("color-picker").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj){ obj.set("fill", this.value); libCanvas.requestRenderAll(); }
+      });
+      document.getElementById("size-slider").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj && obj.type === "i-text"){ obj.set("fontSize", parseInt(this.value, 10)); libCanvas.requestRenderAll(); }
+      });
+
+      // ---- Format de page ----
+      document.getElementById("page-format").addEventListener("change", function(){
+        const [w, h] = this.value.split("x").map(Number);
+        logicalCanvasW = w;
+        logicalCanvasH = h;
+        fitCanvasToContainer();
+      });
+
+      // ---- Panneau de calques (contenu de l'onglet "Calques" — l'ouverture/fermeture
+      // de l'onglet lui-même est gérée par showEditorTab via #lib-tabbar) ----
+      function renderLayersList(){
+        const list = document.getElementById("layers-list");
+        const objects = libCanvas.getObjects();
+        const active = libCanvas.getActiveObject();
+        if (objects.length === 0){
+          list.innerHTML = '<p style="color:#a9a496;font-size:12px;">Aucun élément sur le canevas.</p>';
+          return;
+        }
+        list.innerHTML = objects.slice().reverse().map(function(obj, i){
+          const realIndex = objects.length - 1 - i;
+          const name = obj.type === "i-text" ? ('"' + (obj.text || "").slice(0, 18) + '"') : (obj.type === "image" ? "🖼️ Image" : "🔷 " + obj.type);
+          const locked = obj.lockMovementX;
+          const hidden = !obj.visible;
+          return '<div class="layer-item' + (obj === active ? ' active' : '') + '" data-index="' + realIndex + '">' +
+            '<span class="layer-name">' + name + '</span>' +
+            '<button data-action="lock" title="Verrouiller">' + (locked ? "🔒" : "🔓") + '</button>' +
+            '<button data-action="hide" title="Afficher/Cacher">' + (hidden ? "🙈" : "👁️") + '</button>' +
+            '<button data-action="delete" title="Supprimer">🗑️</button>' +
+          '</div>';
+        }).join("");
+      }
+
+      document.getElementById("layers-list").addEventListener("click", function(e){
+        const item = e.target.closest(".layer-item");
+        if (!item) return;
+        const index = parseInt(item.dataset.index, 10);
+        const obj = libCanvas.getObjects()[index];
+        if (!obj) return;
+        const action = e.target.dataset.action;
+
+        if (action === "lock"){
+          const nowLocked = !obj.lockMovementX;
+          obj.set({ lockMovementX: nowLocked, lockMovementY: nowLocked, lockScalingX: nowLocked, lockScalingY: nowLocked, lockRotation: nowLocked, selectable: !nowLocked });
+        } else if (action === "hide"){
+          obj.set("visible", !obj.visible);
+        } else if (action === "delete"){
+          libCanvas.remove(obj);
+        } else {
+          libCanvas.setActiveObject(obj);
+        }
+        libCanvas.requestRenderAll();
+        renderLayersList();
+      });
+      libCanvas.on("selection:created", renderLayersList);
+      libCanvas.on("selection:updated", renderLayersList);
+      libCanvas.on("object:added", renderLayersList);
+      libCanvas.on("object:removed", renderLayersList);
+
+      // ---- Fond du canevas : couleur ou transparent ----
+      // (le fond réellement transparent n'est appliqué qu'à l'export/sauvegarde
+      // — l'affichage à l'écran reste sur un damier gris clair, plus fiable sur mobile)
+      let isTransparentBg = false;
+      document.getElementById("bg-color-picker").addEventListener("input", function(){
+        isTransparentBg = false;
+        libCanvas.backgroundColor = this.value;
+        libCanvas.requestRenderAll();
+      });
+      document.getElementById("bg-transparent-btn").addEventListener("click", function(){
+        isTransparentBg = true;
+        libCanvas.backgroundColor = makeCheckerboardPattern();
+        libCanvas.requestRenderAll();
+      });
+
+      function makeCheckerboardPattern(){
+        const patternCanvas = document.createElement("canvas");
+        patternCanvas.width = 20; patternCanvas.height = 20;
+        const ctx = patternCanvas.getContext("2d");
+        ctx.fillStyle = "#f0f0f0"; ctx.fillRect(0, 0, 20, 20);
+        ctx.fillStyle = "#d8d8d8";
+        ctx.fillRect(0, 0, 10, 10);
+        ctx.fillRect(10, 10, 10, 10);
+        return new fabric.Pattern({ source: patternCanvas, repeat: "repeat" });
+      }
+
+      // Bascule vers un fond réellement transparent juste le temps de produire
+      // l'image finale (export, sauvegarde, publication), puis restaure l'aperçu.
+      function withRealBackgroundForExport(callback){
+        const previousBg = libCanvas.backgroundColor;
+        if (isTransparentBg) libCanvas.backgroundColor = null;
+        libCanvas.renderAll();
+        const result = callback();
+        libCanvas.backgroundColor = previousBg;
+        libCanvas.renderAll();
+        return result;
+      }
+
+      document.getElementById("bring-front").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj) libCanvas.bringToFront(obj);
+      });
+      document.getElementById("send-back").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj) libCanvas.sendToBack(obj);
+      });
+      document.getElementById("delete-obj").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj) libCanvas.remove(obj);
+      });
+      document.getElementById("clear-canvas").addEventListener("click", function(){
+        if (confirm("Effacer toute la création en cours ?")){
+          libCanvas.clear();
+          libCanvas.backgroundColor = "#ffffff";
+          libCanvas.requestRenderAll();
+        }
+      });
+
+      // ---- Réglages photo : TOUT s'additionne sur la même image, rien n'écrase le reste ----
+      // Comme dans PixelLab : sélectionner une image bascule automatiquement sur l'onglet "Effets".
+      libCanvas.on("selection:created", toggleFilterPanel);
+      libCanvas.on("selection:updated", toggleFilterPanel);
+      libCanvas.on("selection:cleared", function(){
+        if (activeEditorTab === "effets") showEditorTab(null);
+      });
+
+      function toggleFilterPanel(){
+        const obj = libCanvas.getActiveObject();
+        const isImage = !!(obj && obj.type === "image");
+        if (isImage){
+          syncFilterControlsToObject(obj);
+          showEditorTab("effets");
+        } else if (activeEditorTab === "effets"){
+          showEditorTab(null);
+        }
+      }
+
+      // État complet des réglages, stocké sur l'image elle-même (obj._goldenFx)
+      // — chaque image garde ses propres réglages indépendamment des autres.
+      function getFxState(obj){
+        if (!obj._goldenFx){
+          obj._goldenFx = { brightness: 0, contrast: 0, saturation: 0, sharpen: false, tone: "none", vignette: false, grain: false };
+        }
+        return obj._goldenFx;
+      }
+
+      // Remet les curseurs/boutons à l'écran en accord avec l'état réel de l'image sélectionnée
+      function syncFilterControlsToObject(obj){
+        const fx = getFxState(obj);
+        document.getElementById("filter-brightness").value = fx.brightness;
+        document.getElementById("filter-contrast").value = fx.contrast;
+        document.getElementById("filter-saturation").value = fx.saturation;
+        document.getElementById("filter-sharpen").checked = fx.sharpen;
+      }
+
+      // Reconstruit TOUTE la liste d'effets à partir de l'état combiné —
+      // c'est la seule fonction qui touche obj.filters, appelée après
+      // chaque changement (curseur OU préréglage), donc rien n'est jamais perdu.
+      function rebuildFilters(obj){
+        const fx = getFxState(obj);
+        const filters = [];
+
+        if (fx.tone === "bw") filters.push(new fabric.Image.filters.Grayscale());
+        else if (fx.tone === "sepia") filters.push(new fabric.Image.filters.Sepia());
+        else if (fx.tone === "vivid"){ filters.push(new fabric.Image.filters.Saturation({ saturation: 0.5 })); filters.push(new fabric.Image.filters.Contrast({ contrast: 0.2 })); }
+        else if (fx.tone === "cool") filters.push(new fabric.Image.filters.HueRotation({ rotation: 0.35 }));
+        else if (fx.tone === "warm"){ filters.push(new fabric.Image.filters.HueRotation({ rotation: -0.15 })); filters.push(new fabric.Image.filters.Saturation({ saturation: 0.15 })); }
+        else if (fx.tone === "vintage"){ filters.push(new fabric.Image.filters.Sepia()); filters.push(new fabric.Image.filters.Contrast({ contrast: -0.15 })); }
+        else if (fx.tone === "soft") filters.push(new fabric.Image.filters.Blur({ blur: 0.08 }));
+        else if (fx.tone === "invert") filters.push(new fabric.Image.filters.Invert());
+
+        filters.push(new fabric.Image.filters.Brightness({ brightness: fx.brightness / 100 }));
+        filters.push(new fabric.Image.filters.Contrast({ contrast: fx.contrast / 100 }));
+        filters.push(new fabric.Image.filters.Saturation({ saturation: fx.saturation / 100 }));
+        if (fx.sharpen) filters.push(new fabric.Image.filters.Convolute({ matrix: [0,-1,0,-1,5,-1,0,-1,0] }));
+        if (fx.grain) filters.push(new fabric.Image.filters.Noise({ noise: 60 }));
+
+        obj.filters = filters;
+        obj.applyFilters();
+
+        if (fx.vignette) addVignetteOverlay(obj);
+        else removeVignetteOverlay(obj);
+
+        libCanvas.requestRenderAll();
+      }
+
+      function applyImageFilters(){
+        const obj = libCanvas.getActiveObject();
+        if (!obj || obj.type !== "image") return;
+        const fx = getFxState(obj);
+        fx.brightness = parseInt(document.getElementById("filter-brightness").value, 10);
+        fx.contrast = parseInt(document.getElementById("filter-contrast").value, 10);
+        fx.saturation = parseInt(document.getElementById("filter-saturation").value, 10);
+        fx.sharpen = document.getElementById("filter-sharpen").checked;
+        rebuildFilters(obj);
+      }
+      ["filter-brightness","filter-contrast","filter-saturation"].forEach(function(id){
+        document.getElementById(id).addEventListener("input", applyImageFilters);
+      });
+      document.getElementById("filter-sharpen").addEventListener("change", applyImageFilters);
+      document.getElementById("filter-reset").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (!obj || obj.type !== "image") return;
+        obj._goldenFx = { brightness: 0, contrast: 0, saturation: 0, sharpen: false, tone: "none", vignette: false, grain: false };
+        syncFilterControlsToObject(obj);
+        rebuildFilters(obj);
+      });
+
+      // ---- Préréglages d'effets photo — s'ajoutent aux réglages déjà en place ----
+      document.getElementById("filter-presets").addEventListener("click", function(e){
+        const btn = e.target.closest("button[data-preset]");
+        if (!btn) return;
+        const obj = libCanvas.getActiveObject();
+        if (!obj || obj.type !== "image") return;
+
+        const preset = btn.dataset.preset;
+        const fx = getFxState(obj);
+
+        if (preset === "vignette") fx.vignette = !fx.vignette;
+        else if (preset === "grain") fx.grain = !fx.grain;
+        else fx.tone = (fx.tone === preset) ? "none" : preset; // reclique = désactive cette teinte
+
+        rebuildFilters(obj);
+      });
+
+      // Superpose un léger dégradé sombre sur les bords de l'image sélectionnée (effet vignette)
+      function addVignetteOverlay(imgObj){
+        const w = imgObj.width * imgObj.scaleX;
+        const h = imgObj.height * imgObj.scaleY;
+        const existing = imgObj._vignetteOverlay;
+        if (existing) libCanvas.remove(existing);
+
+        const overlay = new fabric.Rect({
+          left: imgObj.left, top: imgObj.top, width: w, height: h,
+          fill: new fabric.Gradient({
+            type: "radial",
+            coords: { x1: w/2, y1: h/2, r1: 0, x2: w/2, y2: h/2, r2: w/1.3 },
+            colorStops: [{ offset: 0, color: "rgba(0,0,0,0)" }, { offset: 1, color: "rgba(0,0,0,0.45)" }]
+          }),
+          selectable: false, evented: false, originX: imgObj.originX, originY: imgObj.originY
+        });
+        imgObj._vignetteOverlay = overlay;
+        libCanvas.add(overlay);
+        libCanvas.bringToFront(overlay);
+      }
+      function removeVignetteOverlay(imgObj){
+        if (imgObj._vignetteOverlay){
+          libCanvas.remove(imgObj._vignetteOverlay);
+          imgObj._vignetteOverlay = null;
+        }
+      }
+
+      // ---- Retouche par IA (peau, imperfections, qualité pro, éclat) ----
+      const RETOUCH_PROMPTS = {
+        peau: "Retouche cette photo en adoucissant et lissant la peau du visage de façon naturelle, sans dénaturer les traits ni rendre le rendu artificiel. Garde le reste de l'image identique.",
+        boutons: "Retouche cette photo en effaçant les boutons, imperfections et taches sur la peau, de façon naturelle et discrète. Garde le reste de l'image identique.",
+        pro: "Améliore cette photo pour lui donner un rendu professionnel de haute qualité : netteté, exposition et cadrage optimisés, comme une photo prise par un photographe professionnel. Garde le contenu identique.",
+        eclat: "Améliore l'éclat, la vivacité et l'équilibre des couleurs de cette photo, de façon naturelle et harmonieuse. Garde le contenu identique."
+      };
+
+      document.querySelectorAll(".ai-retouch-btn").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          const obj = libCanvas.getActiveObject();
+          if (!obj || obj.type !== "image") return;
+
+          const loading = document.getElementById("ai-retouch-loading");
+          loading.classList.add("show");
+          document.querySelectorAll(".ai-retouch-btn").forEach(function(b){ b.disabled = true; });
+
+          const sourceDataUrl = obj.toDataURL({ format: "png" });
+          const promptText = RETOUCH_PROMPTS[btn.dataset.retouch];
+
+          retouchGoldenAIImage(sourceDataUrl, promptText).then(function(resultDataUrl){
+            obj.setSrc(resultDataUrl, function(){
+              libCanvas.requestRenderAll();
+              loading.classList.remove("show");
+              document.querySelectorAll(".ai-retouch-btn").forEach(function(b){ b.disabled = false; });
+            });
+          }).catch(function(err){
+            loading.classList.remove("show");
+            document.querySelectorAll(".ai-retouch-btn").forEach(function(b){ b.disabled = false; });
+            alert("Erreur de retouche : " + err.message);
+          });
+        });
+      });
+
+      // ---- Annuler / Rétablir ----
+      function pushHistory(){
+        if (restoringState) return;
+        undoStack.push(JSON.stringify(libCanvas.toJSON()));
+        if (undoStack.length > 40) undoStack.shift();
+        redoStack = [];
+        updateUndoRedoButtons();
+      }
+      function updateUndoRedoButtons(){
+        document.getElementById("undo-btn").disabled = undoStack.length <= 1;
+        document.getElementById("redo-btn").disabled = redoStack.length === 0;
+      }
+      libCanvas.on("object:added", pushHistory);
+      libCanvas.on("object:modified", pushHistory);
+      libCanvas.on("object:removed", pushHistory);
+      pushHistory(); // état initial (canvas vide)
+
+      document.getElementById("undo-btn").addEventListener("click", function(){
+        if (undoStack.length <= 1) return;
+        redoStack.push(undoStack.pop());
+        restoringState = true;
+        libCanvas.loadFromJSON(undoStack[undoStack.length - 1], function(){
+          libCanvas.requestRenderAll();
+          restoringState = false;
+          updateUndoRedoButtons();
+        });
+      });
+      document.getElementById("redo-btn").addEventListener("click", function(){
+        if (redoStack.length === 0) return;
+        const state = redoStack.pop();
+        undoStack.push(state);
+        restoringState = true;
+        libCanvas.loadFromJSON(state, function(){
+          libCanvas.requestRenderAll();
+          restoringState = false;
+          updateUndoRedoButtons();
+        });
+      });
+
+      document.getElementById("export-btn").addEventListener("click", function(){
+        const dataUrl = withRealBackgroundForExport(function(){ return libCanvas.toDataURL({ format: "png", quality: 1 }); });
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = (document.getElementById("creation-title").value.trim() || "creation-golden") + ".png";
+        a.click();
+      });
+
+      document.getElementById("save-btn").addEventListener("click", saveCreation);
+
+      // ---- Publication admin dans la bibliothèque publique ----
+      const session = getClientSession();
+      if (session && session.user && session.user.id === GOLDEN_ADMIN_UID){
+        document.getElementById("publish-row").style.display = "flex";
+      }
+      document.getElementById("publish-premium").addEventListener("change", function(){
+        document.getElementById("publish-price").style.display = this.checked ? "inline-block" : "none";
+      });
+      document.getElementById("publish-btn").addEventListener("click", publishTemplate);
+
+      // Reprend une création existante si ?id= est présent dans l'URL
+      const params = new URLSearchParams(window.location.search);
+      const editId = params.get("id");
+      if (editId) loadCreation(editId);
+
+      loadMyCreations();
+      loadTemplateGallery();
+    }
+
+    // ---- Galerie de modèles publics (gratuits et premium) ----
+    function loadTemplateGallery(){
+      const grid = document.getElementById("gallery-grid");
+      const session = getClientSession();
+
+      Promise.all([
+        supaRequest("bibliotheque_templates_golden?is_public=eq.true&select=id,title,thumbnail_url,is_premium,price&order=created_at.desc&limit=20"),
+        session ? clientRequest("template_purchases_golden?select=template_id") : Promise.resolve([])
+      ]).then(function(results){
+        const templates = results[0] || [];
+        const purchasedIds = (results[1] || []).map(function(p){ return p.template_id; });
+
+        if (templates.length === 0){
+          grid.innerHTML = '<p class="cm-empty">Aucun modèle publié pour le moment.</p>';
+          return;
+        }
+
+        grid.innerHTML = templates.map(function(t){
+          const unlocked = !t.is_premium || purchasedIds.indexOf(t.id) !== -1;
+          return '<div class="gallery-card">' +
+            (t.thumbnail_url ? '<img src="' + esc(t.thumbnail_url) + '">' : '') +
+            '<div class="gallery-card-body">' +
+              '<span class="gallery-card-badge ' + (t.is_premium ? "premium" : "free") + '">' + (t.is_premium ? "Premium — " + (t.price ? t.price.toFixed(2) + " $" : "") : "Gratuit") + '</span>' +
+              '<div class="gallery-card-title">' + esc(t.title) + '</div>' +
+              (unlocked
+                ? '<button type="button" class="btn btn-onlight" style="width:100%;justify-content:center;" onclick="useTemplate(\'' + t.id + '\')">Utiliser</button>'
+                : '<button type="button" class="btn btn-onlight" style="width:100%;justify-content:center;background:#2f6fed;border-color:#2f6fed;" onclick="unlockTemplate(\'' + t.id + '\')">🔓 Débloquer</button>'
+              ) +
+            '</div>' +
+          '</div>';
+        }).join("");
+      }).catch(function(err){
+        grid.innerHTML = '<p class="cm-empty">Galerie momentanément indisponible.</p>';
+        console.error("Erreur galerie :", err);
+      });
+    }
+
+    function useTemplate(templateId){
+      supaRequest("bibliotheque_templates_golden?id=eq." + templateId + "&select=canvas_json,title").then(function(rows){
+        if (!rows || !rows[0]) return;
+        currentCreationId = null; // nouvelle création, pas une modification du modèle original
+        document.getElementById("creation-title").value = rows[0].title || "";
+        libCanvas.loadFromJSON(rows[0].canvas_json, function(){ libCanvas.requestRenderAll(); });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }).catch(function(err){ alert("Impossible de charger ce modèle : " + err.message); });
+    }
+
+    function unlockTemplate(templateId){
+      if (!getClientSession()){
+        alert("Connecte-toi pour débloquer ce modèle.");
+        return;
+      }
+      if (!confirm("Débloquer ce modèle premium ? Le montant sera débité de ton solde Golden Pay.")) return;
+
+      clientRequest("rpc/unlock_premium_template", { method: "POST", body: { template_id_input: templateId } })
+        .then(function(){
+          alert("✅ Modèle débloqué !");
+          loadTemplateGallery();
+        })
+        .catch(function(err){
+          alert("❌ " + err.message);
+        });
+    }
+
+    function publishTemplate(){
+      const status = document.getElementById("lib-status");
+      const session = getClientSession();
+      const title = document.getElementById("creation-title").value.trim() || "Modèle sans titre";
+      const isPremium = document.getElementById("publish-premium").checked;
+      const price = isPremium ? (parseFloat(document.getElementById("publish-price").value) || 0) : 0;
+
+      status.style.display = "inline";
+      status.style.color = "var(--gold)";
+      status.textContent = "Publication...";
+
+      const canvasJson = libCanvas.toJSON();
+      const thumbDataUrl = withRealBackgroundForExport(function(){ return libCanvas.toDataURL({ format: "png", quality: 0.8, multiplier: 0.5 }); });
+
+      fetch(thumbDataUrl).then(function(r){ return r.blob(); }).then(function(blob){
+        const file = new File([blob], "template-" + Date.now() + ".png", { type: "image/png" });
+        return uploadToSupabase(file, "templates");
+      }).then(function(thumbUrl){
+        return clientRequest("bibliotheque_templates_golden", {
+          method: "POST",
+          body: { user_id: session.user.id, title: title, thumbnail_url: thumbUrl, canvas_json: canvasJson, is_premium: isPremium, price: price, is_public: true }
+        });
+      }).then(function(){
+        status.textContent = "✅ Modèle publié dans la bibliothèque !";
+        setTimeout(function(){ status.style.display = "none"; }, 2500);
+      }).catch(function(err){
+        status.style.color = "#c85a5a";
+        status.textContent = "❌ " + err.message;
+      });
+    }
+
+    function saveCreation(){
+      const status = document.getElementById("lib-status");
+      const title = document.getElementById("creation-title").value.trim() || "Sans titre";
+      const session = getClientSession();
+      status.style.display = "inline";
+      status.style.color = "var(--gold)";
+      status.textContent = "Sauvegarde...";
+
+      const canvasJson = libCanvas.toJSON();
+      const thumbDataUrl = withRealBackgroundForExport(function(){ return libCanvas.toDataURL({ format: "png", quality: 0.8, multiplier: 0.5 }); });
+
+      fetch(thumbDataUrl).then(function(r){ return r.blob(); }).then(function(blob){
+        const file = new File([blob], "thumb-" + Date.now() + ".png", { type: "image/png" });
+        return uploadToSupabase(file, "creations");
+      }).then(function(thumbUrl){
+        const body = { user_id: session.user.id, title: title, thumbnail_url: thumbUrl, canvas_json: canvasJson, updated_at: new Date().toISOString() };
+        if (currentCreationId){
+          return clientRequest("user_creations_golden?id=eq." + currentCreationId, { method: "PATCH", body: body });
+        }
+        return clientRequest("user_creations_golden", { method: "POST", body: body }).then(function(rows){
+          if (rows && rows[0]) currentCreationId = rows[0].id;
+        });
+      }).then(function(){
+        status.textContent = "✅ Sauvegardé !";
+        loadMyCreations();
+        setTimeout(function(){ status.style.display = "none"; }, 2500);
+      }).catch(function(err){
+        status.style.color = "#c85a5a";
+        status.textContent = "❌ " + err.message;
+        console.error(err);
+      });
+    }
+
+    function loadCreation(id){
+      clientRequest("user_creations_golden?id=eq." + id + "&select=*").then(function(rows){
+        if (!rows || !rows[0]) return;
+        const c = rows[0];
+        currentCreationId = c.id;
+        document.getElementById("creation-title").value = c.title || "";
+        libCanvas.loadFromJSON(c.canvas_json, function(){ libCanvas.requestRenderAll(); });
+      }).catch(function(err){ console.error("Erreur chargement création :", err); });
+    }
+
+    function loadMyCreations(){
+      const grid = document.getElementById("my-creations-grid");
+      clientRequest("user_creations_golden?select=id,title,thumbnail_url&order=updated_at.desc&limit=20")
+        .then(function(rows){
+          if (!rows || rows.length === 0){
+            grid.innerHTML = '<p class="cm-empty">Aucune création pour le moment.</p>';
+            return;
+          }
+          grid.innerHTML = rows.map(function(c){
+            return '<div class="creation-card" onclick="window.location.href=\'bibliotheque.html?id=' + c.id + '\'">' +
+              (c.thumbnail_url ? '<img src="' + esc(c.thumbnail_url) + '">' : '<div style="aspect-ratio:1/1;background:#EDEAE0;"></div>') +
+              '<div class="cc-title">' + esc(c.title || "Sans titre") + '</div>' +
+            '</div>';
+          }).join("");
+        })
+        .catch(function(err){ console.error("Erreur liste créations :", err); });
+    }
+  </script>
+
+</body>
+</html>
