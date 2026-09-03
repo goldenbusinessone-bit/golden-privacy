@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bibliothèque — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260822f">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<style>
+  .lib-wrap{max-width:1100px;margin:0 auto;padding:16px 0 60px;}
+  .lib-wrap > h1, .lib-wrap > p, .lib-wrap > .lib-login-gate,
+  .lib-wrap > #editor-area > h2, .lib-wrap > #editor-area > .gallery-grid,
+  .lib-wrap > #editor-area > .my-creations-grid{ padding-left:16px; padding-right:16px; }
+
+  /* ===== Coquille éditeur façon PixelLab : hauteur FIXE, entête + canevas + barre basse toujours visibles,
+     le canevas se met à l'échelle pour tenir dans l'espace dispo (jamais besoin de scroller la page) ===== */
+  .lib-editor-shell{
+    display:flex;flex-direction:column;
+    height:min(74vh,620px);min-height:400px;
+    background:#100f0c;
+  }
+  .lib-topbar{
+    display:flex;align-items:center;gap:6px;overflow-x:auto;flex:none;
+    background:#1c1a16;padding:10px 12px;
+    border-bottom:1px solid #3a382f;
+  }
+  .lib-topbar button, .lib-topbar select{
+    background:#2a2620;border:1px solid #3a382f;border-radius:8px;padding:8px 10px;
+    font-size:12.5px;font-weight:600;cursor:pointer;color:#e8e4d8;flex:none;
+  }
+  .lib-topbar button:hover{background:var(--gold);color:var(--ink);border-color:var(--gold);}
+  .lib-topbar button:disabled{opacity:.35;cursor:default;background:#2a2620;color:#e8e4d8;}
+  .lib-topbar button.danger:hover{background:#c85a5a;color:#fff;border-color:#c85a5a;}
+  .lib-topbar-sep{width:1px;height:22px;background:#3a382f;margin:0 2px;flex:none;}
+  .lib-topbar-spacer{flex:1;}
+
+  /* barre basse : rangée 1 = sous-outils contextuels, rangée 2 = onglets (comme PixelLab) */
+  .lib-bottombar{
+    flex:none;background:#1c1a16;border-top:1px solid #3a382f;
+  }
+  .lib-subpanel{
+    display:none;flex-wrap:wrap;gap:10px;align-items:center;padding:12px;
+    max-height:150px;overflow-y:auto;
+  }
+  .lib-subpanel.active{display:flex;}
+  .lib-subpanel button, .lib-subpanel select{
+    background:#2a2620;border:1px solid #3a382f;border-radius:8px;padding:9px 12px;
+    font-size:13px;font-weight:600;cursor:pointer;color:#e8e4d8;
+  }
+  .lib-subpanel button:hover{background:var(--gold);color:var(--ink);border-color:var(--gold);}
+  .lib-subpanel input[type=color]{width:36px;height:36px;border:1px solid #3a382f;border-radius:8px;padding:2px;cursor:pointer;background:#2a2620;}
+  .lib-subpanel input[type=range]{width:110px;}
+  .lib-subpanel label{font-size:11.5px;color:#a9a496;display:flex;align-items:center;gap:6px;}
+  .lib-tabbar{display:flex;flex:none;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .lib-tabbar button{
+    flex:none;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;
+    background:none;border:none;border-top:2px solid transparent;border-radius:0;
+    padding:9px 4px 8px;font-size:10px;font-weight:600;color:#a9a496;cursor:pointer;
+  }
+  .lib-tabbar button.active{color:var(--gold-light,var(--gold));border-top-color:var(--gold);background:rgba(201,162,39,.08);}
+  .lib-tabbar button .tab-icon{font-size:19px;line-height:1;}
+
+  .shape-grid{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:6px;width:100%;
+  }
+  .lib-subpanel-sep{width:1px;height:26px;background:#3a382f;flex:none;}
+  .text-style-group, .text-align-group{display:flex;gap:4px;}
+  .text-style-group button, .text-align-group button{
+    min-width:34px;padding:8px 10px !important;
+  }
+  .text-style-group button.active, .text-align-group button.active{
+    background:var(--gold) !important;color:var(--ink) !important;border-color:var(--gold) !important;
+  }
+  #sticker-categories button.active{background:var(--gold) !important;color:var(--ink) !important;}
+
+  .shape-grid button{padding:8px;font-size:18px;display:flex;align-items:center;justify-content:center;}
+  .filter-panel{ width:100%; }
+  .ai-gen-overlay{
+    display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.55);
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .ai-gen-overlay.open{display:flex;}
+  .ai-gen-box{
+    background:#1c1a16;border:1px solid #3a382f;border-radius:14px;padding:24px;
+    max-width:420px;width:100%;color:#e8e4d8;
+  }
+  .ai-gen-box h3{font-family:'Fraunces',serif;color:var(--gold-light);font-size:18px;margin-bottom:4px;}
+  .ai-gen-box p{font-size:12.5px;color:#a9a496;margin-bottom:14px;}
+  .ai-gen-box textarea{
+    width:100%;min-height:80px;border-radius:8px;border:1px solid #3a382f;background:#2a2620;
+    color:#e8e4d8;padding:10px 12px;font-family:'Inter',sans-serif;font-size:14px;resize:vertical;
+  }
+  .ai-gen-box .ai-gen-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;}
+  .ai-gen-box button{border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;}
+  .ai-gen-cancel{background:none;color:#a9a496;}
+  .ai-gen-submit{background:var(--gold);color:var(--ink);}
+  .ai-gen-loading{display:none;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--gold-light);}
+  .ai-gen-loading.show{display:flex;}
+  .ai-gen-spinner{width:18px;height:18px;border:2px solid #3a382f;border-top-color:var(--gold);border-radius:50%;animation:aiSpin .8s linear infinite;}
+  @keyframes aiSpin{to{transform:rotate(360deg);}}
+  .filter-panel label{font-size:12px;color:var(--text-mute);display:flex;flex-direction:column;gap:4px;min-width:120px;}
+  .layer-item{
+    display:flex;align-items:center;gap:8px;background:#2a2620;border-radius:8px;padding:8px 10px;cursor:pointer;
+  }
+  .layer-item.active{background:var(--gold);color:var(--ink);}
+  .layer-item span.layer-name{flex:1;font-size:12.5px;color:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .layer-item button{background:none;border:none;color:inherit;cursor:pointer;font-size:14px;padding:2px 4px;}
+  .gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px;}
+  @media (min-width:640px){.gallery-grid{grid-template-columns:repeat(4,1fr);}}
+  .gallery-card{background:#fff;border:1px solid var(--stone-line);border-radius:10px;overflow:hidden;}
+  .gallery-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#EDEAE0;}
+  .gallery-card-body{padding:10px;}
+  .gallery-card-title{font-size:12.5px;font-weight:600;margin-bottom:6px;}
+  .gallery-card-badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:6px;}
+  .gallery-card-badge.free{background:#e3f3df;color:#3f7a34;}
+  .gallery-card-badge.premium{background:#FAF0D0;color:#8a6d1a;}
+  .lib-canvas-area{background:#EDEAE0;padding:14px;display:flex;justify-content:center;align-items:center;flex:1;min-height:0;overflow:hidden;}
+  .lib-canvas-area canvas{box-shadow:0 10px 30px rgba(0,0,0,.15);}
+  .lib-save-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center;}
+  .lib-save-row input[type=text]{flex:1;min-width:160px;border:1px solid var(--stone-line);border-radius:6px;padding:10px 12px;font-size:14px;}
+  .lib-status{font-size:12.5px;color:var(--gold);margin-left:6px;}
+  .lib-login-gate{background:#FAF6EA;border:1px dashed var(--stone-line);border-radius:10px;padding:26px 22px;text-align:center;margin-bottom:20px;}
+  .my-creations-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:30px;}
+  @media (min-width:640px){.my-creations-grid{grid-template-columns:repeat(4,1fr);}}
+  .creation-card{background:#fff;border:1px solid var(--stone-line);border-radius:10px;overflow:hidden;cursor:pointer;}
+  .creation-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#EDEAE0;}
+  .creation-card .cc-title{padding:8px 10px;font-size:12.5px;font-weight:600;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="lib-wrap">
+    <h1 style="font-size:24px;font-weight:600;text-align:center;margin-bottom:6px;">📚 Bibliothèque Golden</h1>
+    <p style="text-align:center;color:var(--text-mute);font-size:14px;margin-bottom:24px;">Crée ton affiche, ton design, ta création — comme tu veux.</p>
+
+    <div class="lib-login-gate" id="login-gate">
+      <p style="color:var(--text-mute);margin-bottom:16px;">🔒 Connecte-toi à ton compte Golden pour créer et sauvegarder tes designs.</p>
+      <a href="compte.html" class="btn btn-onlight">Se connecter</a>
+    </div>
+
+    <div id="editor-area" style="display:none;">
+      <div class="lib-editor-shell">
+
+        <!-- Barre supérieure — conforme au point 1.2 du cahier des charges :
+             logo/menu, nom du projet (éditable), dimensions, annuler/rétablir, enregistrer, exporter, plus d'options -->
+        <div class="lib-topbar">
+          <span style="font-weight:800;color:var(--gold);flex:none;padding:0 4px;">G</span>
+          <input type="text" id="creation-title" placeholder="Nom du projet" style="background:#2a2620;border:1px solid #3a382f;border-radius:8px;padding:8px 10px;color:#e8e4d8;font-size:12.5px;font-weight:600;min-width:110px;max-width:170px;">
+          <span id="canvas-dims-badge" style="font-size:11px;color:#a9a496;flex:none;white-space:nowrap;">600×800 px</span>
+          <div class="lib-topbar-sep"></div>
+          <button type="button" id="undo-btn" title="Annuler">↩️</button>
+          <button type="button" id="redo-btn" title="Rétablir">↪️</button>
+          <select id="page-format">
+            <option value="600x800">Portrait (600×800)</option>
+            <option value="1080x1080">Post carré (1080×1080)</option>
+            <option value="1080x1920">Story (1080×1920)</option>
+            <option value="1200x628">Bannière FB (1200×628)</option>
+            <option value="595x842">Affiche A4 (595×842)</option>
+          </select>
+          <div class="lib-topbar-spacer"></div>
+          <span class="lib-status" id="lib-status" style="display:none;flex:none;"></span>
+          <button type="button" id="save-btn" title="Enregistrer">💾</button>
+          <button type="button" id="share-btn" title="Partager">📤</button>
+          <select id="export-format-select" title="Format d'export" style="background:#2a2620;border:1px solid #3a382f;border-radius:8px;padding:8px 6px;color:#e8e4d8;font-size:12px;font-weight:600;flex:none;">
+            <option value="png">PNG</option>
+            <option value="jpg">JPG</option>
+            <option value="svg">SVG</option>
+            <option value="pdf">PDF</option>
+          </select>
+          <button type="button" id="export-btn" title="Exporter">⬇️</button>
+          <div class="lib-topbar-sep"></div>
+          <button type="button" id="bring-front" title="Avant-plan">⬆️</button>
+          <button type="button" id="send-back" title="Arrière-plan">⬇️</button>
+          <button type="button" id="delete-obj" class="danger" title="Supprimer">🗑️</button>
+          <button type="button" id="clear-canvas" class="danger" title="Tout effacer">✖️</button>
+        </div>
+
+        <div class="lib-canvas-area">
+          <canvas id="lib-canvas" width="600" height="800"></canvas>
+        </div>
+
+        <!-- Barre du bas à 2 rangées, façon PixelLab : sous-outils contextuels puis onglets -->
+        <div class="lib-bottombar">
+
+          <div class="lib-subpanel" id="tabpanel-couleur" data-tabpanel="couleur">
+            <label>Couleur de l'objet <input type="color" id="color-picker" value="#C9A227"></label>
+            <label>Fond du canevas <input type="color" id="bg-color-picker" value="#ffffff"></label>
+            <button type="button" id="bg-transparent-btn">🔲 Transparent</button>
+          </div>
+
+          <div class="lib-subpanel" id="tabpanel-texte" data-tabpanel="texte">
+            <button type="button" id="add-text">+ Ajouter un texte</button>
+            <button type="button" id="add-text-3d" style="background:#2f6fed;color:#fff;border-color:#2f6fed;">🧊 + Texte 3D</button>
+            <select id="font-picker">
+              <option value="Inter">Inter</option>
+              <option value="Fraunces">Fraunces (élégant)</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Arial">Arial</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Impact">Impact</option>
+              <option value="cursive">Cursive</option>
+            </select>
+            <label>Taille <input type="range" id="size-slider" min="10" max="120" value="28"></label>
+
+            <div class="lib-subpanel-sep"></div>
+            <div class="text-style-group" role="group" aria-label="Style du texte">
+              <button type="button" id="text-bold" data-style="bold" title="Gras" style="font-weight:800;">G</button>
+              <button type="button" id="text-italic" data-style="italic" title="Italique" style="font-style:italic;">I</button>
+              <button type="button" id="text-underline" data-style="underline" title="Souligné" style="text-decoration:underline;">S</button>
+            </div>
+
+            <div class="text-align-group" role="group" aria-label="Alignement du texte">
+              <button type="button" id="text-align-left" data-align="left" title="Aligner à gauche">⬅︎</button>
+              <button type="button" id="text-align-center" data-align="center" title="Centrer">↔︎</button>
+              <button type="button" id="text-align-right" data-align="right" title="Aligner à droite">➡︎</button>
+            </div>
+
+            <label>Espacement <input type="range" id="text-letter-spacing" min="-100" max="800" value="0"></label>
+            <label>Interligne <input type="range" id="text-line-height" min="50" max="300" value="116"></label>
+
+            <div class="lib-subpanel-sep"></div>
+            <!-- Contour — point 5.6 du cahier des charges -->
+            <label><input type="checkbox" id="text-stroke-enable"> Contour</label>
+            <label>Couleur <input type="color" id="text-stroke-color" value="#000000"></label>
+            <label>Épaisseur <input type="range" id="text-stroke-width" min="0" max="20" value="2"></label>
+
+            <div class="lib-subpanel-sep"></div>
+            <!-- Ombre — point 5.7 du cahier des charges -->
+            <label><input type="checkbox" id="text-shadow-enable"> Ombre</label>
+            <label>Couleur <input type="color" id="text-shadow-color" value="#000000"></label>
+            <label>Distance <input type="range" id="text-shadow-distance" min="0" max="40" value="6"></label>
+            <label>Flou <input type="range" id="text-shadow-blur" min="0" max="40" value="8"></label>
+            <label>Angle <input type="range" id="text-shadow-angle" min="0" max="360" value="45"></label>
+            <label>Opacité ombre <input type="range" id="text-shadow-opacity" min="0" max="100" value="60"></label>
+          </div>
+
+          <div class="lib-subpanel" id="tabpanel-formes" data-tabpanel="formes">
+            <div class="shape-grid" id="shape-menu-list"></div>
+          </div>
+
+          <div class="lib-subpanel" id="tabpanel-image" data-tabpanel="image">
+            <button type="button" id="add-image-btn">🖼️ Importer une image</button>
+            <input type="file" id="add-image-input" accept="image/*" style="display:none;">
+            <button type="button" id="ai-generate-btn" style="background:#2f6fed;color:#fff;border-color:#2f6fed;">🤖 Générer avec IA</button>
+          </div>
+
+          <div class="lib-subpanel" id="tabpanel-calques" data-tabpanel="calques" style="flex-direction:column;align-items:stretch;">
+            <div id="layers-group-actions" style="display:none;gap:6px;margin-bottom:6px;">
+              <button type="button" id="layers-group-btn">🔗 Grouper la sélection</button>
+            </div>
+            <button type="button" id="layers-ungroup-btn" style="display:none;margin-bottom:6px;align-self:flex-start;">✂️ Dégrouper</button>
+            <div id="layers-list" style="display:flex;flex-direction:column;gap:4px;width:100%;"></div>
+          </div>
+
+          <div class="lib-subpanel filter-panel" id="tabpanel-effets" data-tabpanel="effets">
+            <div class="filter-presets" id="filter-presets" style="display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-bottom:6px;">
+              <button type="button" data-preset="none" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Original</button>
+              <button type="button" data-preset="bw" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Noir &amp; Blanc</button>
+              <button type="button" data-preset="sepia" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Sépia</button>
+              <button type="button" data-preset="vivid" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Vif</button>
+              <button type="button" data-preset="cool" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Froid</button>
+              <button type="button" data-preset="warm" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Chaud</button>
+              <button type="button" data-preset="vintage" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Vintage</button>
+              <button type="button" data-preset="soft" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Adouci</button>
+              <button type="button" data-preset="invert" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Inversé</button>
+              <button type="button" data-preset="vignette" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Vignette</button>
+              <button type="button" data-preset="grain" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">Grain</button>
+            </div>
+            <label>Luminosité <input type="range" id="filter-brightness" min="-100" max="100" value="0"></label>
+            <label>Contraste <input type="range" id="filter-contrast" min="-100" max="100" value="0"></label>
+            <label>Saturation <input type="range" id="filter-saturation" min="-100" max="100" value="0"></label>
+            <label>Netteté <input type="checkbox" id="filter-sharpen"></label>
+            <button type="button" id="filter-reset" style="background:#fff;color:var(--ink);border:1px solid var(--stone-line);align-self:flex-end;padding:8px 14px;border-radius:6px;font-size:12.5px;">Réinitialiser</button>
+
+            <div style="width:100%;border-top:1px solid #3a382f;margin-top:10px;padding-top:10px;">
+              <p style="font-size:11.5px;color:#a9a496;margin-bottom:8px;">🧠 Détourage par IA locale (réseau de segmentation, précis, gratuit, fonctionne sur ton téléphone)</p>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <button type="button" id="bg-remove-local-btn" style="background:#1a8f5e;color:#fff;border:none;border-radius:16px;padding:7px 14px;font-size:12px;cursor:pointer;font-weight:700;">🧠 Détourer précisément</button>
+              </div>
+              <div class="ai-gen-loading" id="bg-remove-local-loading" style="color:#1a8f5e;"><span class="ai-gen-spinner" style="border-top-color:#1a8f5e;"></span> <span id="bg-remove-local-status">Détourage en cours...</span></div>
+            </div>
+
+            <div style="width:100%;border-top:1px solid #3a382f;margin-top:10px;padding-top:10px;">
+              <p style="font-size:11.5px;color:#a9a496;margin-bottom:8px;">✨ Retouche par IA générative (peau, qualité, imperfections)</p>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <button type="button" class="ai-retouch-btn" data-retouch="peau" style="background:#2f6fed;color:#fff;border:none;border-radius:16px;padding:7px 14px;font-size:12px;cursor:pointer;">🧴 Adoucir la peau</button>
+                <button type="button" class="ai-retouch-btn" data-retouch="boutons" style="background:#2f6fed;color:#fff;border:none;border-radius:16px;padding:7px 14px;font-size:12px;cursor:pointer;">✨ Effacer boutons/taches</button>
+                <button type="button" class="ai-retouch-btn" data-retouch="pro" style="background:#2f6fed;color:#fff;border:none;border-radius:16px;padding:7px 14px;font-size:12px;cursor:pointer;">📸 Qualité professionnelle</button>
+                <button type="button" class="ai-retouch-btn" data-retouch="eclat" style="background:#2f6fed;color:#fff;border:none;border-radius:16px;padding:7px 14px;font-size:12px;cursor:pointer;">💡 Éclat &amp; couleurs</button>
+              </div>
+              <div class="ai-gen-loading" id="ai-retouch-loading" style="color:#2f6fed;"><span class="ai-gen-spinner" style="border-top-color:#2f6fed;"></span> Retouche en cours (10-20 secondes)...</div>
+            </div>
+          </div>
+
+          <!-- Panneau Propriétés / Transformation — point 1.5 et 3.5 du cahier des charges :
+               s'applique à N'IMPORTE QUEL objet sélectionné (texte, forme, image...) -->
+          <div class="lib-subpanel" id="tabpanel-position" data-tabpanel="position">
+            <label>Position X <input type="number" id="prop-x" step="1" style="width:70px;"></label>
+            <label>Position Y <input type="number" id="prop-y" step="1" style="width:70px;"></label>
+            <label>Largeur <input type="number" id="prop-w" step="1" min="1" style="width:70px;"></label>
+            <label>Hauteur <input type="number" id="prop-h" step="1" min="1" style="width:70px;"></label>
+            <label>Rotation <input type="range" id="prop-rotation" min="0" max="360" value="0"></label>
+            <label>Opacité <input type="range" id="prop-opacity" min="0" max="100" value="100"></label>
+            <div class="text-align-group" role="group" aria-label="Retournement">
+              <button type="button" id="prop-flip-h" title="Retourner horizontalement">↔️</button>
+              <button type="button" id="prop-flip-v" title="Retourner verticalement">↕️</button>
+            </div>
+
+            <div class="lib-subpanel-sep"></div>
+            <!-- Avant-plan / Arrière-plan — dupliqué ici pour l'avoir directement sous la main -->
+            <button type="button" id="prop-bring-front">⬆️ Avant-plan</button>
+            <button type="button" id="prop-send-back">⬇️ Arrière-plan</button>
+
+            <div class="lib-subpanel-sep"></div>
+            <!-- Déplacement précis par flèches, façon PixelLab (image "déplacer par : Npx") -->
+            <div style="display:flex;flex-direction:column;gap:6px;width:100%;align-items:center;">
+              <label style="width:100%;">Déplacer par : <b id="nudge-step-value" style="color:var(--gold);">6</b>px</label>
+              <input type="range" id="nudge-step" min="1" max="50" value="6" style="width:100%;">
+              <button type="button" id="nudge-up" title="Monter">⬆️</button>
+              <div style="display:flex;gap:6px;">
+                <button type="button" id="nudge-left" title="Gauche">⬅️</button>
+                <button type="button" id="nudge-down" title="Descendre">⬇️</button>
+                <button type="button" id="nudge-right" title="Droite">➡️</button>
+              </div>
+            </div>
+
+            <div class="lib-subpanel-sep"></div>
+            <!-- Masque — objet en dessous découpé par la forme sélectionnée -->
+            <button type="button" id="mask-apply-btn" style="background:#2f6fed;color:#fff;border-color:#2f6fed;">🎭 Masquer l'objet en dessous avec cette forme</button>
+            <button type="button" id="mask-remove-btn">🎭 Retirer le masque</button>
+          </div>
+
+          <!-- Bloc 1 : Dessin + Traits/Lignes (points 9.2 / 9.3) -->
+          <div class="lib-subpanel" id="tabpanel-dessin" data-tabpanel="dessin">
+            <div class="text-align-group" role="group" aria-label="Mode">
+              <button type="button" class="draw-mode-btn active" data-mode="select" title="Sélection">🖱️</button>
+              <button type="button" class="draw-mode-btn" data-mode="pinceau" title="Pinceau libre">✏️</button>
+            </div>
+            <button type="button" id="add-line-btn">📏 + Ligne droite</button>
+            <button type="button" id="add-arrow-btn">➡️ + Flèche</button>
+            <label>Couleur <input type="color" id="draw-color" value="#111111"></label>
+            <label>Épaisseur <input type="range" id="draw-width" min="1" max="30" value="4"></label>
+            <label>Opacité <input type="range" id="draw-opacity" min="10" max="100" value="100"></label>
+          </div>
+
+          <!-- Bloc 4 (partie Courbes) : point 9.4 — tracé simplifié en V1, pas d'édition fine des poignées -->
+          <div class="lib-subpanel" id="tabpanel-courbes" data-tabpanel="courbes">
+            <button type="button" id="add-curve-btn">➰ + Courbe</button>
+            <label>Couleur <input type="color" id="curve-color" value="#C9A227"></label>
+            <label>Épaisseur <input type="range" id="curve-width" min="1" max="20" value="4"></label>
+          </div>
+
+          <!-- Bloc 2 : Stickers + Icônes (points 9.1 / 9.5) — bibliothèque de départ, extensible -->
+          <div class="lib-subpanel" id="tabpanel-stickers" data-tabpanel="stickers" style="flex-direction:column;align-items:stretch;">
+            <div style="display:flex;gap:6px;width:100%;margin-bottom:6px;">
+              <input type="text" id="sticker-search" placeholder="Rechercher un sticker/icône..." style="flex:1;background:#2a2620;border:1px solid #3a382f;border-radius:8px;padding:8px 10px;color:#e8e4d8;font-size:12.5px;">
+            </div>
+            <div id="sticker-categories" style="display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-bottom:8px;"></div>
+            <div id="sticker-grid" class="shape-grid"></div>
+          </div>
+
+          <div class="lib-tabbar" id="lib-tabbar">
+            <button type="button" data-tab="couleur"><span class="tab-icon">🎨</span>Couleur</button>
+            <button type="button" data-tab="texte"><span class="tab-icon">🔤</span>Texte</button>
+            <button type="button" data-tab="formes"><span class="tab-icon">🔷</span>Formes</button>
+            <button type="button" data-tab="image"><span class="tab-icon">🖼️</span>Image</button>
+            <button type="button" data-tab="dessin"><span class="tab-icon">✏️</span>Dessin</button>
+            <button type="button" data-tab="courbes"><span class="tab-icon">➰</span>Courbes</button>
+            <button type="button" data-tab="stickers"><span class="tab-icon">🌟</span>Stickers</button>
+            <button type="button" id="layers-toggle" data-tab="calques"><span class="tab-icon">🗂️</span>Calques</button>
+            <button type="button" data-tab="effets"><span class="tab-icon">✨</span>Effets</button>
+            <button type="button" data-tab="position"><span class="tab-icon">📐</span>Position</button>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="lib-save-row" style="padding-left:16px;padding-right:16px;">
+        <span id="publish-row" style="display:none;align-items:center;gap:8px;">
+          <label style="font-size:12.5px;color:var(--text-mute);display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="publish-premium"> Premium
+          </label>
+          <input type="number" id="publish-price" placeholder="Prix $" style="width:70px;border:1px solid var(--stone-line);border-radius:6px;padding:8px;display:none;">
+          <button type="button" class="btn btn-onlight" id="publish-btn" style="background:#2f6fed;border-color:#2f6fed;">📤 Publier dans la bibliothèque</button>
+        </span>
+      </div>
+
+      <h2 style="font-size:16px;margin-top:36px;margin-bottom:6px;">🖼️ Galerie de modèles</h2>
+      <p style="font-size:12.5px;color:var(--text-mute);">Des designs déjà commencés (par Golden ou d'autres créateurs) — choisis-en un pour le personnaliser.</p>
+      <div class="gallery-grid" id="gallery-grid"></div>
+
+      <h2 style="font-size:16px;margin-top:36px;margin-bottom:6px;">🗂️ Mes créations</h2>
+      <div class="my-creations-grid" id="my-creations-grid"></div>
+    </div>
+  </section>
+
+  <!-- Fenêtre de génération d'image par IA -->
+  <div class="ai-gen-overlay" id="ai-gen-overlay">
+    <div class="ai-gen-box">
+      <h3>🤖 Générer une image avec l'IA</h3>
+      <p>Décris ce que tu veux (style, couleurs, ambiance) — plus c'est précis, meilleur est le résultat.</p>
+      <textarea id="ai-gen-prompt" placeholder="Ex : logo moderne pour une agence événementielle, style doré et noir, minimaliste"></textarea>
+      <div class="ai-gen-loading" id="ai-gen-loading"><span class="ai-gen-spinner"></span> Génération en cours (10-20 secondes)...</div>
+      <div class="ai-gen-actions">
+        <button type="button" class="ai-gen-cancel" id="ai-gen-cancel">Annuler</button>
+        <button type="button" class="ai-gen-submit" id="ai-gen-submit">✨ Générer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260830"></script>
+  <script>
+    let libCanvas = null;
+    let currentCreationId = null;
+    let undoStack = [];
+    let redoStack = [];
+    let restoringState = false;
+    let logicalCanvasW = 600, logicalCanvasH = 800; // taille "réelle" de la création (indépendante de l'affichage)
+    let isTransparentBg = false; // le fond réellement transparent n'est appliqué qu'à l'export/sauvegarde
+    let isDirtySinceSave = false; // pour l'autosave (Chantier 5)
+    const isAdmin = false; // recalculé après connexion, voir initEditor
+
+    // Bascule vers un fond réellement transparent juste le temps de produire
+    // l'image finale (export, sauvegarde, publication), puis restaure l'aperçu.
+    // NIVEAU GLOBAL (et non dans initEditor) car saveCreation/publishTemplate en ont besoin aussi.
+    function withRealBackgroundForExport(callback){
+      const previousBg = libCanvas.backgroundColor;
+      if (isTransparentBg) libCanvas.backgroundColor = null;
+      libCanvas.renderAll();
+      const result = callback();
+      libCanvas.backgroundColor = previousBg;
+      libCanvas.renderAll();
+      return result;
+    }
+    // Remet le canevas à l'échelle pour tenir dans l'espace disponible — utilisé à l'init,
+    // au redimensionnement, ET après le chargement d'une création (saveCreation/loadCreation).
+    function fitCanvasToContainer(){
+      const area = document.querySelector(".lib-canvas-area");
+      if (!area || !libCanvas) return;
+      const availW = Math.max(area.clientWidth - 28, 40);
+      const availH = Math.max(area.clientHeight - 28, 40);
+      const scale = Math.min(availW / logicalCanvasW, availH / logicalCanvasH, 1);
+      libCanvas.setZoom(scale);
+      libCanvas.setDimensions({ width: logicalCanvasW * scale, height: logicalCanvasH * scale });
+      libCanvas.requestRenderAll();
+      const badge = document.getElementById("canvas-dims-badge");
+      if (badge) badge.textContent = logicalCanvasW + "×" + logicalCanvasH + " px";
+    }
+
+    document.addEventListener("DOMContentLoaded", function(){
+      if (!isClientLoggedIn()){
+        document.getElementById("login-gate").style.display = "block";
+        document.getElementById("editor-area").style.display = "none";
+        return;
+      }
+      document.getElementById("login-gate").style.display = "none";
+      document.getElementById("editor-area").style.display = "block";
+      initEditor();
+    });
+
+    // ---- 10 formes prêtes à l'emploi, façon banque de formes ----
+    const GOLDEN_SHAPES = [
+      { icon: "▭", name: "rect", make: function(c){ return new fabric.Rect({ width: 140, height: 100, fill: c }); } },
+      { icon: "▢", name: "rounded", make: function(c){ return new fabric.Rect({ width: 140, height: 100, fill: c, rx: 18, ry: 18 }); } },
+      { icon: "◯", name: "ring", make: function(c){ return new fabric.Circle({ radius: 60, fill: "transparent", stroke: c, strokeWidth: 8 }); } },
+      { icon: "⬭", name: "ellipse", make: function(c){ return new fabric.Ellipse({ rx: 80, ry: 50, fill: c }); } },
+      { icon: "―", name: "line", make: function(c){ return new fabric.Line([0,0,160,0], { stroke: c, strokeWidth: 6 }); } },
+      { icon: "❤️", name: "coeur", make: function(c){ return makeHeart(c); } },
+      { icon: "✚", name: "croix", make: function(c){ return makeCross(c); } },
+      { icon: "💬", name: "bulle", make: function(c){ return makeSpeechBubble(c); } },
+      { icon: "🎗️", name: "ruban", make: function(c){ return makeRibbon(c); } }
+    ];
+    // Polygones réguliers de 3 à 12 côtés (triangle, carré-losange, pentagone... dodécagone)
+    const polygonIcons = ["▲","◆","⬠","⬡","⭘","⭘","⭘","⭘","⭘","⭘"];
+    for (let sides = 3; sides <= 12; sides++){
+      GOLDEN_SHAPES.push({
+        icon: polygonIcons[sides - 3] || "⬣",
+        name: "polygone-" + sides,
+        make: (function(n){ return function(c){ return makePolygon(n, 65, c); }; })(sides)
+      });
+    }
+    // Étoiles à 5, 6, 8, 10 et 12 branches
+    [5, 6, 8, 10, 12].forEach(function(points){
+      GOLDEN_SHAPES.push({
+        icon: "★",
+        name: "etoile-" + points,
+        make: (function(p){ return function(c){ return makeStar(c, p); }; })(points)
+      });
+    });
+    // Flèches dans les 4 directions
+    [0, 90, 180, 270].forEach(function(angle){
+      const icons = { 0: "➜", 90: "⬇️", 180: "⬅️", 270: "⬆️" };
+      GOLDEN_SHAPES.push({
+        icon: icons[angle],
+        name: "fleche-" + angle,
+        make: (function(a){ return function(c){ const arrow = makeArrow(c); arrow.set({ angle: a }); return arrow; }; })(angle)
+      });
+    });
+
+    function makePolygon(sides, radius, color){
+      const points = [];
+      for (let i = 0; i < sides; i++){
+        const angle = (Math.PI * 2 * i) / sides - Math.PI / 2;
+        points.push({ x: radius + radius * Math.cos(angle), y: radius + radius * Math.sin(angle) });
+      }
+      return new fabric.Polygon(points, { fill: color });
+    }
+    function makeStar(color, spikes){
+      spikes = spikes || 5;
+      const points = [];
+      const outer = 65, inner = outer * 0.42;
+      for (let i = 0; i < spikes * 2; i++){
+        const r = i % 2 === 0 ? outer : inner;
+        const angle = (Math.PI * i) / spikes - Math.PI / 2;
+        points.push({ x: outer + r * Math.cos(angle), y: outer + r * Math.sin(angle) });
+      }
+      return new fabric.Polygon(points, { fill: color });
+    }
+    function makeArrow(color){
+      const points = [
+        {x:0,y:20},{x:80,y:20},{x:80,y:0},{x:130,y:35},{x:80,y:70},{x:80,y:50},{x:0,y:50}
+      ];
+      return new fabric.Polygon(points, { fill: color });
+    }
+    function makeHeart(color){
+      return new fabric.Path("M 65 25 C 55 5, 20 5, 20 35 C 20 60, 65 90, 65 90 C 65 90, 110 60, 110 35 C 110 5, 75 5, 65 25 Z", { fill: color });
+    }
+    function makeCross(color){
+      const points = [
+        {x:40,y:0},{x:80,y:0},{x:80,y:40},{x:120,y:40},{x:120,y:80},{x:80,y:80},
+        {x:80,y:120},{x:40,y:120},{x:40,y:80},{x:0,y:80},{x:0,y:40},{x:40,y:40}
+      ];
+      return new fabric.Polygon(points, { fill: color });
+    }
+    function makeSpeechBubble(color){
+      return new fabric.Path("M 10 10 H 130 A 10 10 0 0 1 140 20 V 80 A 10 10 0 0 1 130 90 H 50 L 25 110 L 30 90 H 20 A 10 10 0 0 1 10 80 V 20 A 10 10 0 0 1 10 10 Z", { fill: color });
+    }
+    function makeRibbon(color){
+      const points = [
+        {x:0,y:0},{x:100,y:0},{x:100,y:90},{x:50,y:65},{x:0,y:90}
+      ];
+      return new fabric.Polygon(points, { fill: color });
+    }
+
+    function initEditor(){
+      libCanvas = new fabric.Canvas("lib-canvas", {
+        backgroundColor: "#ffffff",
+        selection: false,        // pas de rectangle de sélection au glissé sur l'espace vide
+        allowTouchScrolling: true // au doigt, si on ne touche aucun élément, on laisse la page scroller normalement
+      });
+      fitCanvasToContainer();
+      window.addEventListener("resize", debounce(fitCanvasToContainer, 150));
+
+      // (fitCanvasToContainer est maintenant définie au niveau global du script, voir plus haut —
+      // saveCreation/loadCreation en ont besoin aussi pour recadrer après un chargement.)
+      function debounce(fn, delay){
+        let t;
+        return function(){ clearTimeout(t); t = setTimeout(fn, delay); };
+      }
+
+      // ---- Barre du bas façon PixelLab : un seul onglet ouvert à la fois ----
+      let activeEditorTab = null;
+      function showEditorTab(name){
+        activeEditorTab = name;
+        document.querySelectorAll(".lib-subpanel").forEach(function(panel){
+          panel.classList.toggle("active", panel.dataset.tabpanel === name);
+        });
+        document.querySelectorAll("#lib-tabbar button").forEach(function(btn){
+          btn.classList.toggle("active", btn.dataset.tab === name);
+        });
+        if (name === "calques") renderLayersList();
+        // En quittant l'onglet Dessin, on repasse en mode sélection pour ne pas bloquer le reste du canevas.
+        if (name !== "dessin" && libCanvas.isDrawingMode) setDrawMode("select");
+        // Ouvrir/fermer le panneau change la hauteur dispo pour le canevas — on réajuste après le reflow.
+        setTimeout(fitCanvasToContainer, 0);
+      }
+      document.getElementById("lib-tabbar").addEventListener("click", function(e){
+        const btn = e.target.closest("button[data-tab]");
+        if (!btn) return;
+        // Un second clic sur l'onglet déjà actif referme le panneau (comme un accordéon)
+        showEditorTab(activeEditorTab === btn.dataset.tab ? null : btn.dataset.tab);
+      });
+
+      // ---- Menu de formes (grille statique dans l'onglet "Formes") ----
+      const shapeList = document.getElementById("shape-menu-list");
+      shapeList.innerHTML = GOLDEN_SHAPES.map(function(s, i){
+        return '<button type="button" data-shape="' + i + '" title="' + s.name + '">' + s.icon + '</button>';
+      }).join("");
+      shapeList.addEventListener("click", function(e){
+        const btn = e.target.closest("button[data-shape]");
+        if (!btn) return;
+        const shape = GOLDEN_SHAPES[parseInt(btn.dataset.shape, 10)];
+        const color = document.getElementById("color-picker").value;
+        const obj = shape.make(color);
+        obj.set({ left: 90, top: 90 });
+        libCanvas.add(obj).setActiveObject(obj);
+      });
+
+      // ================== BLOC 1 : Dessin + Traits/Lignes (points 9.2 / 9.3) ==================
+      function hexToRgbaSimple(hex, alphaPct){
+        const h = (hex || "#111111").replace("#", "");
+        const r = parseInt(h.substring(0, 2), 16) || 0;
+        const g = parseInt(h.substring(2, 4), 16) || 0;
+        const b = parseInt(h.substring(4, 6), 16) || 0;
+        return "rgba(" + r + "," + g + "," + b + "," + (alphaPct / 100) + ")";
+      }
+      function updateBrushFromControls(){
+        if (!libCanvas.freeDrawingBrush) return;
+        const color = document.getElementById("draw-color").value;
+        const opacity = parseFloat(document.getElementById("draw-opacity").value);
+        libCanvas.freeDrawingBrush.color = hexToRgbaSimple(color, opacity);
+        libCanvas.freeDrawingBrush.width = parseInt(document.getElementById("draw-width").value, 10);
+      }
+      function setDrawMode(mode){
+        libCanvas.isDrawingMode = (mode === "pinceau");
+        if (mode === "pinceau"){
+          libCanvas.freeDrawingBrush = new fabric.PencilBrush(libCanvas);
+          updateBrushFromControls();
+        }
+        document.querySelectorAll(".draw-mode-btn").forEach(function(b){
+          b.classList.toggle("active", b.dataset.mode === mode);
+        });
+      }
+      document.querySelectorAll(".draw-mode-btn").forEach(function(btn){
+        btn.addEventListener("click", function(){ setDrawMode(btn.dataset.mode); });
+      });
+      ["draw-color", "draw-width", "draw-opacity"].forEach(function(id){
+        document.getElementById(id).addEventListener("input", updateBrushFromControls);
+      });
+      document.getElementById("add-line-btn").addEventListener("click", function(){
+        const color = document.getElementById("draw-color").value;
+        const width = parseInt(document.getElementById("draw-width").value, 10);
+        const line = new fabric.Line([0, 0, 200, 0], {
+          left: 60, top: 150, stroke: color, strokeWidth: width,
+          opacity: parseFloat(document.getElementById("draw-opacity").value) / 100
+        });
+        libCanvas.add(line).setActiveObject(line);
+        setDrawMode("select");
+      });
+      document.getElementById("add-arrow-btn").addEventListener("click", function(){
+        const color = document.getElementById("draw-color").value;
+        const arrow = makeArrow(color);
+        arrow.set({
+          left: 70, top: 150,
+          opacity: parseFloat(document.getElementById("draw-opacity").value) / 100
+        });
+        libCanvas.add(arrow).setActiveObject(arrow);
+        setDrawMode("select");
+      });
+
+      // ================== BLOC 4 (partie Courbes) — point 9.4, tracé simplifié V1 ==================
+      document.getElementById("add-curve-btn").addEventListener("click", function(){
+        const color = document.getElementById("curve-color").value;
+        const width = parseInt(document.getElementById("curve-width").value, 10);
+        const curve = new fabric.Path("M 0 60 C 60 -20, 140 140, 200 60", {
+          left: 70, top: 200, stroke: color, strokeWidth: width, fill: "", strokeLineCap: "round"
+        });
+        libCanvas.add(curve).setActiveObject(curve);
+      });
+
+      // ================== BLOC 4 (partie Masques) ==================
+      document.getElementById("mask-apply-btn").addEventListener("click", function(){
+        const shape = libCanvas.getActiveObject();
+        if (!shape){ alert("Sélectionne d'abord la forme qui servira de masque (elle doit être juste au-dessus de l'objet à masquer dans les calques)."); return; }
+        const objects = libCanvas.getObjects();
+        const shapeIndex = objects.indexOf(shape);
+        const target = objects[shapeIndex - 1];
+        if (!target){ alert("Il n'y a aucun objet juste en dessous de cette forme à masquer."); return; }
+        shape.clone(function(cloned){
+          cloned.set({ absolutePositioned: true });
+          target.clipPath = cloned;
+          libCanvas.remove(shape);
+          libCanvas.setActiveObject(target);
+          libCanvas.requestRenderAll();
+          renderLayersList();
+          syncPositionControlsToObject(target);
+        });
+      });
+      document.getElementById("mask-remove-btn").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj && obj.clipPath){ obj.clipPath = null; libCanvas.requestRenderAll(); }
+      });
+
+      // ================== BLOC 2 : Stickers + Icônes (points 9.1 / 9.5) ==================
+      // Bibliothèque de départ (emoji vectoriels natifs, aucune image externe requise) — extensible plus tard.
+      const GOLDEN_STICKERS = [
+        { name: "étoile", icon: "⭐", cat: "Formes" }, { name: "cœur", icon: "❤️", cat: "Formes" },
+        { name: "éclair", icon: "⚡", cat: "Formes" }, { name: "couronne", icon: "👑", cat: "Business" },
+        { name: "flèche haut", icon: "⬆️", cat: "Icônes" }, { name: "flèche bas", icon: "⬇️", cat: "Icônes" },
+        { name: "coche", icon: "✅", cat: "Icônes" }, { name: "croix", icon: "❌", cat: "Icônes" },
+        { name: "feu", icon: "🔥", cat: "Emoji" }, { name: "fête", icon: "🎉", cat: "Emoji" },
+        { name: "soleil", icon: "☀️", cat: "Nature" }, { name: "fleur", icon: "🌸", cat: "Nature" },
+        { name: "feuille", icon: "🍃", cat: "Nature" }, { name: "cadeau", icon: "🎁", cat: "Business" },
+        { name: "diamant", icon: "💎", cat: "Business" }, { name: "fusée", icon: "🚀", cat: "Business" },
+        { name: "téléphone", icon: "📞", cat: "Icônes" }, { name: "email", icon: "✉️", cat: "Icônes" },
+        { name: "localisation", icon: "📍", cat: "Icônes" }, { name: "horloge", icon: "⏰", cat: "Icônes" },
+        { name: "mégaphone", icon: "📣", cat: "Business" }, { name: "graphique", icon: "📈", cat: "Business" },
+        { name: "ampoule", icon: "💡", cat: "Business" }, { name: "cible", icon: "🎯", cat: "Business" },
+        { name: "smiley", icon: "😊", cat: "Emoji" }, { name: "pouce", icon: "👍", cat: "Emoji" },
+        { name: "applaudissement", icon: "👏", cat: "Emoji" }, { name: "musique", icon: "🎵", cat: "Emoji" }
+      ];
+      const stickerCategories = ["Tous"].concat(Array.from(new Set(GOLDEN_STICKERS.map(function(s){ return s.cat; }))));
+      let activeStickerCat = "Tous";
+      const stickerCatBar = document.getElementById("sticker-categories");
+      stickerCatBar.innerHTML = stickerCategories.map(function(cat){
+        return '<button type="button" data-cat="' + cat + '" style="background:#2a2620;border:1px solid #3a382f;border-radius:14px;padding:5px 11px;font-size:11px;color:#e8e4d8;">' + cat + '</button>';
+      }).join("");
+      function renderStickerGrid(){
+        const q = document.getElementById("sticker-search").value.trim().toLowerCase();
+        const grid = document.getElementById("sticker-grid");
+        const items = GOLDEN_STICKERS.filter(function(s){
+          const matchCat = activeStickerCat === "Tous" || s.cat === activeStickerCat;
+          const matchQ = !q || s.name.toLowerCase().indexOf(q) !== -1;
+          return matchCat && matchQ;
+        });
+        grid.innerHTML = items.map(function(s, i){
+          return '<button type="button" data-sticker="' + i + '" data-filtered="1" title="' + s.name + '" style="font-size:22px;">' + s.icon + '</button>';
+        }).join("") || '<p style="color:#a9a496;font-size:12px;">Aucun résultat.</p>';
+        grid.dataset.currentList = JSON.stringify(items.map(function(s){ return s.icon; }));
+      }
+      stickerCatBar.addEventListener("click", function(e){
+        const btn = e.target.closest("button[data-cat]");
+        if (!btn) return;
+        activeStickerCat = btn.dataset.cat;
+        stickerCatBar.querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b === btn); });
+        renderStickerGrid();
+      });
+      document.getElementById("sticker-search").addEventListener("input", renderStickerGrid);
+      document.getElementById("sticker-grid").addEventListener("click", function(e){
+        const btn = e.target.closest("button[data-sticker]");
+        if (!btn) return;
+        const list = JSON.parse(document.getElementById("sticker-grid").dataset.currentList || "[]");
+        const icon = list[parseInt(btn.dataset.sticker, 10)];
+        if (!icon) return;
+        const stickerObj = new fabric.Text(icon, { left: 100, top: 100, fontSize: 60 });
+        libCanvas.add(stickerObj).setActiveObject(stickerObj);
+      });
+      renderStickerGrid();
+
+      // ================== BLOC 3 : Texte 3D (point 6) ==================
+      // Effet de profondeur simulé (empilement de copies décalées, dégradé profondeur → face).
+      // Non couvert en V1 : vraie perspective 3D, éclairage, rotation 3D (nécessiterait WebGL).
+      function darkenHex(hex, amount){
+        const h = hex.replace("#", "");
+        const r = Math.max(0, parseInt(h.substring(0, 2), 16) - amount);
+        const g = Math.max(0, parseInt(h.substring(2, 4), 16) - amount);
+        const b = Math.max(0, parseInt(h.substring(4, 6), 16) - amount);
+        const toHex = function(n){ return n.toString(16).padStart(2, "0"); };
+        return "#" + toHex(r) + toHex(g) + toHex(b);
+      }
+      function interpolateHex(hexA, hexB, t){
+        const a = hexA.replace("#", ""), b = hexB.replace("#", "");
+        const ar = parseInt(a.substring(0, 2), 16), ag = parseInt(a.substring(2, 4), 16), ab = parseInt(a.substring(4, 6), 16);
+        const br = parseInt(b.substring(0, 2), 16), bg = parseInt(b.substring(2, 4), 16), bb = parseInt(b.substring(4, 6), 16);
+        const toHex = function(n){ return Math.round(n).toString(16).padStart(2, "0"); };
+        return "#" + toHex(ar + (br - ar) * t) + toHex(ag + (bg - ag) * t) + toHex(ab + (bb - ab) * t);
+      }
+      function makeText3D(str, faceColor, fontFamily, fontSize){
+        const depthColor = darkenHex(faceColor, 90);
+        const steps = 9;
+        const layers = [];
+        for (let i = steps; i >= 0; i--){
+          const t = 1 - i / steps; // 0 = fond (profondeur), 1 = face avant
+          layers.push(new fabric.Text(str, {
+            left: i * 1.4, top: i * 1.4, fontFamily: fontFamily, fontSize: fontSize,
+            fill: interpolateHex(depthColor, faceColor, t), fontWeight: "bold",
+            selectable: false, evented: false
+          }));
+        }
+        const group = new fabric.Group(layers, {});
+        group.customType = "text3d";
+        return group;
+      }
+      document.getElementById("add-text-3d").addEventListener("click", function(){
+        const str = prompt("Texte 3D :", "GOLDEN");
+        if (!str) return;
+        const color = document.getElementById("color-picker").value;
+        const font = document.getElementById("font-picker").value;
+        const size = parseInt(document.getElementById("size-slider").value, 10) || 48;
+        const group = makeText3D(str, color, font, size);
+        group.set({ left: 60, top: 60 });
+        libCanvas.add(group).setActiveObject(group);
+      });
+
+      document.getElementById("add-text").addEventListener("click", function(){
+        const size = parseInt(document.getElementById("size-slider").value, 10);
+        const color = document.getElementById("color-picker").value;
+        const font = document.getElementById("font-picker").value;
+        const text = new fabric.IText("Ton texte ici", { left: 80, top: 80, fontSize: size, fill: color, fontFamily: font });
+        libCanvas.add(text).setActiveObject(text);
+        text.enterEditing();
+        text.selectAll();
+      });
+
+      document.getElementById("font-picker").addEventListener("change", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj && obj.type === "i-text"){ obj.set("fontFamily", this.value); libCanvas.requestRenderAll(); }
+      });
+
+      document.getElementById("add-image-btn").addEventListener("click", function(){
+        document.getElementById("add-image-input").click();
+      });
+      document.getElementById("add-image-input").addEventListener("change", function(e){
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev){
+          fabric.Image.fromURL(ev.target.result, function(img){
+            img.scaleToWidth(220);
+            img.set({ left: 60, top: 60 });
+            libCanvas.add(img).setActiveObject(img);
+          });
+        };
+        reader.readAsDataURL(file);
+        e.target.value = "";
+      });
+
+      // ---- Génération d'image par IA (Gemini) — fenêtre dédiée ----
+      const aiOverlay = document.getElementById("ai-gen-overlay");
+      const aiPromptField = document.getElementById("ai-gen-prompt");
+      const aiLoading = document.getElementById("ai-gen-loading");
+      const aiSubmit = document.getElementById("ai-gen-submit");
+
+      document.getElementById("ai-generate-btn").addEventListener("click", function(){
+        aiPromptField.value = "";
+        aiLoading.classList.remove("show");
+        aiOverlay.classList.add("open");
+        aiPromptField.focus();
+      });
+      document.getElementById("ai-gen-cancel").addEventListener("click", function(){
+        aiOverlay.classList.remove("open");
+      });
+      aiOverlay.addEventListener("click", function(e){
+        if (e.target === aiOverlay) aiOverlay.classList.remove("open");
+      });
+
+      aiSubmit.addEventListener("click", function(){
+        const description = aiPromptField.value.trim();
+        if (!description) return;
+
+        aiLoading.classList.add("show");
+        aiSubmit.disabled = true;
+
+        generateGoldenAIImage(description).then(function(dataUrl){
+          fabric.Image.fromURL(dataUrl, function(img){
+            img.scaleToWidth(280);
+            img.set({ left: 60, top: 60 });
+            libCanvas.add(img).setActiveObject(img);
+            aiOverlay.classList.remove("open");
+            aiLoading.classList.remove("show");
+            aiSubmit.disabled = false;
+          });
+        }).catch(function(err){
+          aiLoading.classList.remove("show");
+          aiSubmit.disabled = false;
+          alert("Erreur : " + err.message);
+        });
+      });
+
+      document.getElementById("color-picker").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj){ obj.set("fill", this.value); libCanvas.requestRenderAll(); }
+      });
+      document.getElementById("size-slider").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj && obj.type === "i-text"){ obj.set("fontSize", parseInt(this.value, 10)); libCanvas.requestRenderAll(); }
+      });
+
+      // ---- Groupe A : mise en forme du texte (gras/italique/souligné, alignement, espacement, interligne) ----
+      document.querySelectorAll(".text-style-group button[data-style]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          const obj = libCanvas.getActiveObject();
+          if (!obj || obj.type !== "i-text") return;
+          const style = btn.dataset.style;
+          if (style === "bold"){
+            obj.set("fontWeight", obj.fontWeight === "bold" ? "normal" : "bold");
+          } else if (style === "italic"){
+            obj.set("fontStyle", obj.fontStyle === "italic" ? "normal" : "italic");
+          } else if (style === "underline"){
+            obj.set("underline", !obj.underline);
+          }
+          libCanvas.requestRenderAll();
+          syncTextControlsToObject(obj);
+        });
+      });
+      document.querySelectorAll(".text-align-group button[data-align]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          const obj = libCanvas.getActiveObject();
+          if (!obj || obj.type !== "i-text") return;
+          obj.set("textAlign", btn.dataset.align);
+          libCanvas.requestRenderAll();
+          syncTextControlsToObject(obj);
+        });
+      });
+      document.getElementById("text-letter-spacing").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj && obj.type === "i-text"){ obj.set("charSpacing", parseInt(this.value, 10)); libCanvas.requestRenderAll(); }
+      });
+      document.getElementById("text-line-height").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj && obj.type === "i-text"){ obj.set("lineHeight", parseInt(this.value, 10) / 100); libCanvas.requestRenderAll(); }
+      });
+
+      // ---- Groupe B : effets du texte — Contour (5.6) et Ombre (5.7) du cahier des charges ----
+      function hexToRgba(hex, alphaPct){
+        const h = (hex || "#000000").replace("#", "");
+        const r = parseInt(h.substring(0, 2), 16) || 0;
+        const g = parseInt(h.substring(2, 4), 16) || 0;
+        const b = parseInt(h.substring(4, 6), 16) || 0;
+        return "rgba(" + r + "," + g + "," + b + "," + (alphaPct / 100) + ")";
+      }
+      function parseRgba(str){
+        const m = str && str.match(/rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        if (!m) return { hex: "#000000", alphaPct: 60 };
+        const toHex = function(n){ return parseInt(n, 10).toString(16).padStart(2, "0"); };
+        return {
+          hex: "#" + toHex(m[1]) + toHex(m[2]) + toHex(m[3]),
+          alphaPct: m[4] != null ? Math.round(parseFloat(m[4]) * 100) : 100
+        };
+      }
+      function applyStrokeFromControls(){
+        const obj = libCanvas.getActiveObject();
+        if (!obj || obj.type !== "i-text") return;
+        const on = document.getElementById("text-stroke-enable").checked;
+        obj.set({
+          stroke: on ? document.getElementById("text-stroke-color").value : null,
+          strokeWidth: on ? parseInt(document.getElementById("text-stroke-width").value, 10) : 0
+        });
+        libCanvas.requestRenderAll();
+      }
+      function applyShadowFromControls(){
+        const obj = libCanvas.getActiveObject();
+        if (!obj || obj.type !== "i-text") return;
+        const on = document.getElementById("text-shadow-enable").checked;
+        if (!on){ obj.set("shadow", null); libCanvas.requestRenderAll(); return; }
+        const distance = parseFloat(document.getElementById("text-shadow-distance").value);
+        const angleRad = parseFloat(document.getElementById("text-shadow-angle").value) * Math.PI / 180;
+        const color = hexToRgba(
+          document.getElementById("text-shadow-color").value,
+          parseFloat(document.getElementById("text-shadow-opacity").value)
+        );
+        obj.set("shadow", new fabric.Shadow({
+          color: color,
+          blur: parseFloat(document.getElementById("text-shadow-blur").value),
+          offsetX: distance * Math.cos(angleRad),
+          offsetY: distance * Math.sin(angleRad)
+        }));
+        libCanvas.requestRenderAll();
+      }
+      ["text-stroke-enable", "text-stroke-color", "text-stroke-width"].forEach(function(id){
+        const evt = id === "text-stroke-enable" ? "change" : "input";
+        document.getElementById(id).addEventListener(evt, applyStrokeFromControls);
+      });
+      ["text-shadow-enable", "text-shadow-color", "text-shadow-distance", "text-shadow-blur", "text-shadow-angle", "text-shadow-opacity"].forEach(function(id){
+        const evt = id === "text-shadow-enable" ? "change" : "input";
+        document.getElementById(id).addEventListener(evt, applyShadowFromControls);
+      });
+
+      // Reflète les réglages actuels du texte sélectionné dans les boutons/curseurs de l'onglet Texte
+      function syncTextControlsToObject(obj){
+        document.getElementById("font-picker").value = obj.fontFamily || "Inter";
+        document.getElementById("size-slider").value = Math.round(obj.fontSize || 28);
+        document.getElementById("text-letter-spacing").value = obj.charSpacing || 0;
+        document.getElementById("text-line-height").value = Math.round((obj.lineHeight || 1.16) * 100);
+        document.getElementById("text-bold").classList.toggle("active", obj.fontWeight === "bold");
+        document.getElementById("text-italic").classList.toggle("active", obj.fontStyle === "italic");
+        document.getElementById("text-underline").classList.toggle("active", !!obj.underline);
+        document.querySelectorAll(".text-align-group button[data-align]").forEach(function(btn){
+          btn.classList.toggle("active", (obj.textAlign || "left") === btn.dataset.align);
+        });
+
+        document.getElementById("text-stroke-enable").checked = !!(obj.stroke && obj.strokeWidth);
+        document.getElementById("text-stroke-color").value = obj.stroke || "#000000";
+        document.getElementById("text-stroke-width").value = obj.strokeWidth || 2;
+
+        const sh = obj.shadow;
+        document.getElementById("text-shadow-enable").checked = !!sh;
+        if (sh){
+          const parsed = parseRgba(sh.color);
+          document.getElementById("text-shadow-color").value = parsed.hex;
+          document.getElementById("text-shadow-opacity").value = parsed.alphaPct;
+          document.getElementById("text-shadow-blur").value = Math.round(sh.blur || 8);
+          const dist = Math.round(Math.sqrt(sh.offsetX * sh.offsetX + sh.offsetY * sh.offsetY));
+          document.getElementById("text-shadow-distance").value = dist;
+          let angle = Math.round(Math.atan2(sh.offsetY, sh.offsetX) * 180 / Math.PI);
+          if (angle < 0) angle += 360;
+          document.getElementById("text-shadow-angle").value = angle;
+        }
+      }
+
+      // ---- Format de page ----
+      document.getElementById("page-format").addEventListener("change", function(){
+        const [w, h] = this.value.split("x").map(Number);
+        logicalCanvasW = w;
+        logicalCanvasH = h;
+        fitCanvasToContainer();
+      });
+
+      // ---- Panneau de calques (contenu de l'onglet "Calques" — l'ouverture/fermeture
+      // de l'onglet lui-même est gérée par showEditorTab via #lib-tabbar) ----
+      function renderLayersList(){
+        const list = document.getElementById("layers-list");
+        const objects = libCanvas.getObjects();
+        const active = libCanvas.getActiveObject();
+        document.getElementById("layers-ungroup-btn").style.display = (active && active.type === "group") ? "inline-block" : "none";
+        if (objects.length === 0){
+          list.innerHTML = '<p style="color:#a9a496;font-size:12px;">Aucun élément sur le canevas.</p>';
+          return;
+        }
+        list.innerHTML = objects.slice().reverse().map(function(obj, i){
+          const realIndex = objects.length - 1 - i;
+          const defaultName = obj.type === "i-text" ? ('"' + (obj.text || "").slice(0, 18) + '"') : (obj.type === "image" ? "🖼️ Image" : "🔷 " + obj.type);
+          const name = obj.customName || defaultName;
+          const locked = obj.lockMovementX;
+          const hidden = !obj.visible;
+          return '<div class="layer-item' + (obj === active ? ' active' : '') + '" data-index="' + realIndex + '">' +
+            '<input type="checkbox" class="layer-check" data-action="check" title="Sélection multiple">' +
+            '<span class="layer-name" data-action="select">' + name + '</span>' +
+            '<button data-action="up" title="Monter d\'un niveau">▲</button>' +
+            '<button data-action="down" title="Descendre d\'un niveau">▼</button>' +
+            '<button data-action="duplicate" title="Dupliquer">📋</button>' +
+            '<button data-action="rename" title="Renommer">✏️</button>' +
+            '<button data-action="lock" title="Verrouiller">' + (locked ? "🔒" : "🔓") + '</button>' +
+            '<button data-action="hide" title="Afficher/Cacher">' + (hidden ? "🙈" : "👁️") + '</button>' +
+            '<button data-action="delete" title="Supprimer">🗑️</button>' +
+          '</div>';
+        }).join("");
+        updateGroupActionVisibility();
+      }
+
+      function updateGroupActionVisibility(){
+        const checked = document.querySelectorAll(".layer-check:checked").length;
+        document.getElementById("layers-group-actions").style.display = checked >= 2 ? "flex" : "none";
+      }
+
+      document.getElementById("layers-list").addEventListener("change", function(e){
+        if (e.target.classList.contains("layer-check")) updateGroupActionVisibility();
+      });
+
+      document.getElementById("layers-list").addEventListener("click", function(e){
+        const item = e.target.closest(".layer-item");
+        if (!item) return;
+        const index = parseInt(item.dataset.index, 10);
+        const obj = libCanvas.getObjects()[index];
+        if (!obj) return;
+        const action = e.target.dataset.action;
+
+        if (action === "lock"){
+          const nowLocked = !obj.lockMovementX;
+          obj.set({ lockMovementX: nowLocked, lockMovementY: nowLocked, lockScalingX: nowLocked, lockScalingY: nowLocked, lockRotation: nowLocked, selectable: !nowLocked });
+        } else if (action === "hide"){
+          obj.set("visible", !obj.visible);
+        } else if (action === "delete"){
+          libCanvas.remove(obj);
+        } else if (action === "up"){
+          libCanvas.bringForward(obj);
+        } else if (action === "down"){
+          libCanvas.sendBackwards(obj);
+        } else if (action === "duplicate"){
+          obj.clone(function(cloned){
+            cloned.set({ left: (obj.left || 0) + 20, top: (obj.top || 0) + 20 });
+            if (obj.customName) cloned.customName = obj.customName + " (copie)";
+            libCanvas.add(cloned).setActiveObject(cloned);
+            libCanvas.requestRenderAll();
+            renderLayersList();
+          });
+          return;
+        } else if (action === "rename"){
+          const current = obj.customName || (obj.type === "i-text" ? (obj.text || "") : obj.type);
+          const newName = prompt("Nom du calque :", current);
+          if (newName !== null && newName.trim() !== "") obj.customName = newName.trim();
+        } else if (action === "check"){
+          // rien à faire ici, géré par l'écouteur "change" ci-dessus
+        } else {
+          libCanvas.setActiveObject(obj);
+        }
+        libCanvas.requestRenderAll();
+        renderLayersList();
+      });
+
+      // ---- Grouper / Dégrouper — point 4.4 du cahier des charges ----
+      document.getElementById("layers-group-btn").addEventListener("click", function(){
+        const checkedIndexes = Array.from(document.querySelectorAll(".layer-check:checked")).map(function(cb){
+          return parseInt(cb.closest(".layer-item").dataset.index, 10);
+        });
+        const objectsToGroup = checkedIndexes.map(function(i){ return libCanvas.getObjects()[i]; }).filter(Boolean);
+        if (objectsToGroup.length < 2) return;
+        const sel = new fabric.ActiveSelection(objectsToGroup, { canvas: libCanvas });
+        libCanvas.setActiveObject(sel);
+        const group = sel.toGroup();
+        libCanvas.setActiveObject(group);
+        libCanvas.requestRenderAll();
+        renderLayersList();
+      });
+      document.getElementById("layers-ungroup-btn").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (!obj || obj.type !== "group") return;
+        const items = obj.toActiveSelection();
+        libCanvas.discardActiveObject();
+        libCanvas.requestRenderAll();
+        renderLayersList();
+      });
+
+      libCanvas.on("selection:created", renderLayersList);
+      libCanvas.on("selection:updated", renderLayersList);
+      libCanvas.on("object:added", renderLayersList);
+      libCanvas.on("object:removed", renderLayersList);
+
+      // ---- Fond du canevas : couleur ou transparent ----
+      // (le fond réellement transparent n'est appliqué qu'à l'export/sauvegarde
+      // — l'affichage à l'écran reste sur un damier gris clair, plus fiable sur mobile)
+      document.getElementById("bg-color-picker").addEventListener("input", function(){
+        isTransparentBg = false;
+        libCanvas.backgroundColor = this.value;
+        libCanvas.requestRenderAll();
+      });
+      document.getElementById("bg-transparent-btn").addEventListener("click", function(){
+        isTransparentBg = true;
+        libCanvas.backgroundColor = makeCheckerboardPattern();
+        libCanvas.requestRenderAll();
+      });
+
+      function makeCheckerboardPattern(){
+        const patternCanvas = document.createElement("canvas");
+        patternCanvas.width = 20; patternCanvas.height = 20;
+        const ctx = patternCanvas.getContext("2d");
+        ctx.fillStyle = "#f0f0f0"; ctx.fillRect(0, 0, 20, 20);
+        ctx.fillStyle = "#d8d8d8";
+        ctx.fillRect(0, 0, 10, 10);
+        ctx.fillRect(10, 10, 10, 10);
+        return new fabric.Pattern({ source: patternCanvas, repeat: "repeat" });
+      }
+
+      document.getElementById("bring-front").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj) libCanvas.bringToFront(obj);
+      });
+      document.getElementById("send-back").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj) libCanvas.sendToBack(obj);
+      });
+      // Mêmes actions, dupliquées dans l'onglet Position pour les avoir directement sous la main
+      document.getElementById("prop-bring-front").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj){ libCanvas.bringToFront(obj); renderLayersList(); }
+      });
+      document.getElementById("prop-send-back").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj){ libCanvas.sendToBack(obj); renderLayersList(); }
+      });
+
+      // ---- Déplacement précis par flèches + vitesse réglable, façon PixelLab ----
+      document.getElementById("nudge-step").addEventListener("input", function(){
+        document.getElementById("nudge-step-value").textContent = this.value;
+      });
+      function nudgeActiveObject(dx, dy){
+        const obj = libCanvas.getActiveObject();
+        if (!obj) return;
+        obj.set({ left: (obj.left || 0) + dx, top: (obj.top || 0) + dy });
+        obj.setCoords();
+        libCanvas.requestRenderAll();
+        libCanvas.fire("object:modified", { target: obj }); // alimente l'historique + l'autosave
+        syncPositionControlsToObject(obj);
+      }
+      document.getElementById("nudge-up").addEventListener("click", function(){
+        nudgeActiveObject(0, -parseInt(document.getElementById("nudge-step").value, 10));
+      });
+      document.getElementById("nudge-down").addEventListener("click", function(){
+        nudgeActiveObject(0, parseInt(document.getElementById("nudge-step").value, 10));
+      });
+      document.getElementById("nudge-left").addEventListener("click", function(){
+        nudgeActiveObject(-parseInt(document.getElementById("nudge-step").value, 10), 0);
+      });
+      document.getElementById("nudge-right").addEventListener("click", function(){
+        nudgeActiveObject(parseInt(document.getElementById("nudge-step").value, 10), 0);
+      });
+      document.getElementById("delete-obj").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj) libCanvas.remove(obj);
+      });
+      document.getElementById("clear-canvas").addEventListener("click", function(){
+        if (confirm("Effacer toute la création en cours ?")){
+          libCanvas.clear();
+          libCanvas.backgroundColor = "#ffffff";
+          libCanvas.requestRenderAll();
+        }
+      });
+
+      // ---- Sélection d'un objet : bascule automatiquement sur l'onglet pertinent, comme dans PixelLab ----
+      // Une image ouvre "Effets" avec ses réglages ; un texte ouvre "Texte" avec sa mise en forme.
+      libCanvas.on("selection:created", handleObjectSelected);
+      libCanvas.on("selection:updated", handleObjectSelected);
+      libCanvas.on("selection:cleared", function(){
+        if (activeEditorTab === "effets" || activeEditorTab === "texte") showEditorTab(null);
+      });
+
+      function handleObjectSelected(){
+        const obj = libCanvas.getActiveObject();
+        if (!obj) return;
+        syncPositionControlsToObject(obj);
+        if (obj.type === "image"){
+          syncFilterControlsToObject(obj);
+          showEditorTab("effets");
+        } else if (obj.type === "i-text"){
+          syncTextControlsToObject(obj);
+          showEditorTab("texte");
+        } else if (activeEditorTab === "effets" || activeEditorTab === "texte"){
+          showEditorTab(null);
+        }
+      }
+
+      // ---- Panneau Propriétés / Transformation (point 1.5 / 3.5 du cahier des charges) ----
+      // Fonctionne pour n'importe quel type d'objet sélectionné.
+      function syncPositionControlsToObject(obj){
+        document.getElementById("prop-x").value = Math.round(obj.left || 0);
+        document.getElementById("prop-y").value = Math.round(obj.top || 0);
+        document.getElementById("prop-w").value = Math.round(obj.getScaledWidth ? obj.getScaledWidth() : obj.width);
+        document.getElementById("prop-h").value = Math.round(obj.getScaledHeight ? obj.getScaledHeight() : obj.height);
+        document.getElementById("prop-rotation").value = Math.round(obj.angle || 0);
+        document.getElementById("prop-opacity").value = Math.round((obj.opacity != null ? obj.opacity : 1) * 100);
+      }
+      // Tant qu'on manipule un objet directement sur le canevas (glisser, redimensionner, tourner),
+      // les champs du panneau Position restent synchronisés en direct.
+      libCanvas.on("object:moving", function(e){ syncPositionControlsToObject(e.target); });
+      libCanvas.on("object:scaling", function(e){ syncPositionControlsToObject(e.target); });
+      libCanvas.on("object:rotating", function(e){ syncPositionControlsToObject(e.target); });
+
+      document.getElementById("prop-x").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj){ obj.set("left", parseFloat(this.value) || 0); obj.setCoords(); libCanvas.requestRenderAll(); }
+      });
+      document.getElementById("prop-y").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj){ obj.set("top", parseFloat(this.value) || 0); obj.setCoords(); libCanvas.requestRenderAll(); }
+      });
+      document.getElementById("prop-w").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        const newW = parseFloat(this.value);
+        if (obj && newW > 0){ obj.set("scaleX", newW / (obj.width || 1)); obj.setCoords(); libCanvas.requestRenderAll(); }
+      });
+      document.getElementById("prop-h").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        const newH = parseFloat(this.value);
+        if (obj && newH > 0){ obj.set("scaleY", newH / (obj.height || 1)); obj.setCoords(); libCanvas.requestRenderAll(); }
+      });
+      document.getElementById("prop-rotation").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj){ obj.set("angle", parseFloat(this.value) || 0); obj.setCoords(); libCanvas.requestRenderAll(); }
+      });
+      document.getElementById("prop-opacity").addEventListener("input", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj){ obj.set("opacity", (parseFloat(this.value) || 0) / 100); libCanvas.requestRenderAll(); }
+      });
+      document.getElementById("prop-flip-h").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj){ obj.set("flipX", !obj.flipX); libCanvas.requestRenderAll(); }
+      });
+      document.getElementById("prop-flip-v").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (obj){ obj.set("flipY", !obj.flipY); libCanvas.requestRenderAll(); }
+      });
+
+      // État complet des réglages, stocké sur l'image elle-même (obj._goldenFx)
+      // — chaque image garde ses propres réglages indépendamment des autres.
+      function getFxState(obj){
+        if (!obj._goldenFx){
+          obj._goldenFx = { brightness: 0, contrast: 0, saturation: 0, sharpen: false, tone: "none", vignette: false, grain: false };
+        }
+        return obj._goldenFx;
+      }
+
+      // Remet les curseurs/boutons à l'écran en accord avec l'état réel de l'image sélectionnée
+      function syncFilterControlsToObject(obj){
+        const fx = getFxState(obj);
+        document.getElementById("filter-brightness").value = fx.brightness;
+        document.getElementById("filter-contrast").value = fx.contrast;
+        document.getElementById("filter-saturation").value = fx.saturation;
+        document.getElementById("filter-sharpen").checked = fx.sharpen;
+      }
+
+      // Reconstruit TOUTE la liste d'effets à partir de l'état combiné —
+      // c'est la seule fonction qui touche obj.filters, appelée après
+      // chaque changement (curseur OU préréglage), donc rien n'est jamais perdu.
+      function rebuildFilters(obj){
+        const fx = getFxState(obj);
+        const filters = [];
+
+        if (fx.tone === "bw") filters.push(new fabric.Image.filters.Grayscale());
+        else if (fx.tone === "sepia") filters.push(new fabric.Image.filters.Sepia());
+        else if (fx.tone === "vivid"){ filters.push(new fabric.Image.filters.Saturation({ saturation: 0.5 })); filters.push(new fabric.Image.filters.Contrast({ contrast: 0.2 })); }
+        else if (fx.tone === "cool") filters.push(new fabric.Image.filters.HueRotation({ rotation: 0.35 }));
+        else if (fx.tone === "warm"){ filters.push(new fabric.Image.filters.HueRotation({ rotation: -0.15 })); filters.push(new fabric.Image.filters.Saturation({ saturation: 0.15 })); }
+        else if (fx.tone === "vintage"){ filters.push(new fabric.Image.filters.Sepia()); filters.push(new fabric.Image.filters.Contrast({ contrast: -0.15 })); }
+        else if (fx.tone === "soft") filters.push(new fabric.Image.filters.Blur({ blur: 0.08 }));
+        else if (fx.tone === "invert") filters.push(new fabric.Image.filters.Invert());
+
+        filters.push(new fabric.Image.filters.Brightness({ brightness: fx.brightness / 100 }));
+        filters.push(new fabric.Image.filters.Contrast({ contrast: fx.contrast / 100 }));
+        filters.push(new fabric.Image.filters.Saturation({ saturation: fx.saturation / 100 }));
+        if (fx.sharpen) filters.push(new fabric.Image.filters.Convolute({ matrix: [0,-1,0,-1,5,-1,0,-1,0] }));
+        if (fx.grain) filters.push(new fabric.Image.filters.Noise({ noise: 60 }));
+
+        obj.filters = filters;
+        obj.applyFilters();
+
+        if (fx.vignette) addVignetteOverlay(obj);
+        else removeVignetteOverlay(obj);
+
+        libCanvas.requestRenderAll();
+      }
+
+      function applyImageFilters(){
+        const obj = libCanvas.getActiveObject();
+        if (!obj || obj.type !== "image") return;
+        const fx = getFxState(obj);
+        fx.brightness = parseInt(document.getElementById("filter-brightness").value, 10);
+        fx.contrast = parseInt(document.getElementById("filter-contrast").value, 10);
+        fx.saturation = parseInt(document.getElementById("filter-saturation").value, 10);
+        fx.sharpen = document.getElementById("filter-sharpen").checked;
+        rebuildFilters(obj);
+      }
+      ["filter-brightness","filter-contrast","filter-saturation"].forEach(function(id){
+        document.getElementById(id).addEventListener("input", applyImageFilters);
+      });
+      document.getElementById("filter-sharpen").addEventListener("change", applyImageFilters);
+      document.getElementById("filter-reset").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (!obj || obj.type !== "image") return;
+        obj._goldenFx = { brightness: 0, contrast: 0, saturation: 0, sharpen: false, tone: "none", vignette: false, grain: false };
+        syncFilterControlsToObject(obj);
+        rebuildFilters(obj);
+      });
+
+      // ---- Préréglages d'effets photo — s'ajoutent aux réglages déjà en place ----
+      document.getElementById("filter-presets").addEventListener("click", function(e){
+        const btn = e.target.closest("button[data-preset]");
+        if (!btn) return;
+        const obj = libCanvas.getActiveObject();
+        if (!obj || obj.type !== "image") return;
+
+        const preset = btn.dataset.preset;
+        const fx = getFxState(obj);
+
+        if (preset === "vignette") fx.vignette = !fx.vignette;
+        else if (preset === "grain") fx.grain = !fx.grain;
+        else fx.tone = (fx.tone === preset) ? "none" : preset; // reclique = désactive cette teinte
+
+        rebuildFilters(obj);
+      });
+
+      // Superpose un léger dégradé sombre sur les bords de l'image sélectionnée (effet vignette)
+      function addVignetteOverlay(imgObj){
+        const w = imgObj.width * imgObj.scaleX;
+        const h = imgObj.height * imgObj.scaleY;
+        const existing = imgObj._vignetteOverlay;
+        if (existing) libCanvas.remove(existing);
+
+        const overlay = new fabric.Rect({
+          left: imgObj.left, top: imgObj.top, width: w, height: h,
+          fill: new fabric.Gradient({
+            type: "radial",
+            coords: { x1: w/2, y1: h/2, r1: 0, x2: w/2, y2: h/2, r2: w/1.3 },
+            colorStops: [{ offset: 0, color: "rgba(0,0,0,0)" }, { offset: 1, color: "rgba(0,0,0,0.45)" }]
+          }),
+          selectable: false, evented: false, originX: imgObj.originX, originY: imgObj.originY
+        });
+        imgObj._vignetteOverlay = overlay;
+        libCanvas.add(overlay);
+        libCanvas.bringToFront(overlay);
+      }
+      function removeVignetteOverlay(imgObj){
+        if (imgObj._vignetteOverlay){
+          libCanvas.remove(imgObj._vignetteOverlay);
+          imgObj._vignetteOverlay = null;
+        }
+      }
+
+      // ---- Détourage précis par IA locale (@imgly/background-removal, réseau de segmentation) ----
+      // Tourne entièrement dans le navigateur — aucune donnée envoyée à un serveur, pas de coût par appel.
+      // Modèle "small" (~40 Mo) choisi plutôt que "medium" (~80 Mo) pour ménager les données mobiles ;
+      // téléchargé une seule fois puis mis en cache par le navigateur.
+      let imglyLoadPromise = null;
+      function loadBackgroundRemovalEngine(onProgress){
+        if (imglyLoadPromise) return imglyLoadPromise;
+        imglyLoadPromise = import("https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm")
+          .then(function(mod){ return mod.default; });
+        return imglyLoadPromise;
+      }
+      document.getElementById("bg-remove-local-btn").addEventListener("click", function(){
+        const obj = libCanvas.getActiveObject();
+        if (!obj || obj.type !== "image"){ alert("Sélectionne d'abord une image."); return; }
+
+        const loading = document.getElementById("bg-remove-local-loading");
+        const statusText = document.getElementById("bg-remove-local-status");
+        const btn = document.getElementById("bg-remove-local-btn");
+        loading.classList.add("show");
+        btn.disabled = true;
+        statusText.textContent = "Chargement du moteur IA...";
+
+        const sourceDataUrl = obj.toDataURL({ format: "png" });
+
+        loadBackgroundRemovalEngine().then(function(removeBg){
+          return removeBg(sourceDataUrl, {
+            model: "small",
+            output: { format: "image/png" },
+            progress: function(key, current, total){
+              if (total > 0) statusText.textContent = "Téléchargement du modèle IA... " + Math.round((current / total) * 100) + "%";
+              else statusText.textContent = "Analyse de l'image...";
+            }
+          });
+        }).then(function(blob){
+          const url = URL.createObjectURL(blob);
+          obj.setSrc(url, function(){
+            libCanvas.requestRenderAll();
+            loading.classList.remove("show");
+            btn.disabled = false;
+            setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+          });
+        }).catch(function(err){
+          loading.classList.remove("show");
+          btn.disabled = false;
+          console.error("Erreur détourage local :", err);
+          alert("Impossible de détourer l'image (vérifie ta connexion pour le premier téléchargement du modèle) : " + err.message);
+        });
+      });
+
+      // ---- Retouche par IA (peau, imperfections, qualité pro, éclat) ----
+      const RETOUCH_PROMPTS = {
+        peau: "Retouche cette photo en adoucissant et lissant la peau du visage de façon naturelle, sans dénaturer les traits ni rendre le rendu artificiel. Garde le reste de l'image identique.",
+        boutons: "Retouche cette photo en effaçant les boutons, imperfections et taches sur la peau, de façon naturelle et discrète. Garde le reste de l'image identique.",
+        pro: "Améliore cette photo pour lui donner un rendu professionnel de haute qualité : netteté, exposition et cadrage optimisés, comme une photo prise par un photographe professionnel. Garde le contenu identique.",
+        eclat: "Améliore l'éclat, la vivacité et l'équilibre des couleurs de cette photo, de façon naturelle et harmonieuse. Garde le contenu identique."
+      };
+
+      document.querySelectorAll(".ai-retouch-btn").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          const obj = libCanvas.getActiveObject();
+          if (!obj || obj.type !== "image") return;
+
+          const loading = document.getElementById("ai-retouch-loading");
+          loading.classList.add("show");
+          document.querySelectorAll(".ai-retouch-btn").forEach(function(b){ b.disabled = true; });
+
+          const sourceDataUrl = obj.toDataURL({ format: "png" });
+          const promptText = RETOUCH_PROMPTS[btn.dataset.retouch];
+
+          retouchGoldenAIImage(sourceDataUrl, promptText).then(function(resultDataUrl){
+            obj.setSrc(resultDataUrl, function(){
+              libCanvas.requestRenderAll();
+              loading.classList.remove("show");
+              document.querySelectorAll(".ai-retouch-btn").forEach(function(b){ b.disabled = false; });
+            });
+          }).catch(function(err){
+            loading.classList.remove("show");
+            document.querySelectorAll(".ai-retouch-btn").forEach(function(b){ b.disabled = false; });
+            alert("Erreur de retouche : " + err.message);
+          });
+        });
+      });
+
+      // ---- Annuler / Rétablir ----
+      function pushHistory(){
+        if (restoringState) return;
+        undoStack.push(JSON.stringify(libCanvas.toJSON(["customName", "customType"])));
+        if (undoStack.length > 40) undoStack.shift();
+        redoStack = [];
+        updateUndoRedoButtons();
+      }
+      function updateUndoRedoButtons(){
+        document.getElementById("undo-btn").disabled = undoStack.length <= 1;
+        document.getElementById("redo-btn").disabled = redoStack.length === 0;
+      }
+      libCanvas.on("object:added", pushHistory);
+      libCanvas.on("object:modified", pushHistory);
+      libCanvas.on("object:removed", pushHistory);
+      pushHistory(); // état initial (canvas vide)
+
+      // ---- Chantier 5 : suivi des modifications non sauvegardées + autosave ----
+      libCanvas.on("object:added", function(){ isDirtySinceSave = true; });
+      libCanvas.on("object:modified", function(){ isDirtySinceSave = true; });
+      libCanvas.on("object:removed", function(){ isDirtySinceSave = true; });
+      setInterval(function(){
+        if (!isDirtySinceSave) return;
+        let session = null;
+        try { session = getClientSession(); } catch (e){ session = null; }
+        if (!session || !session.user) return;
+        saveCreation(true); // true = autosave silencieux
+      }, 30000);
+
+      document.getElementById("undo-btn").addEventListener("click", function(){
+        if (undoStack.length <= 1) return;
+        redoStack.push(undoStack.pop());
+        restoringState = true;
+        libCanvas.loadFromJSON(undoStack[undoStack.length - 1], function(){
+          libCanvas.requestRenderAll();
+          restoringState = false;
+          updateUndoRedoButtons();
+        });
+      });
+      document.getElementById("redo-btn").addEventListener("click", function(){
+        if (redoStack.length === 0) return;
+        const state = redoStack.pop();
+        undoStack.push(state);
+        restoringState = true;
+        libCanvas.loadFromJSON(state, function(){
+          libCanvas.requestRenderAll();
+          restoringState = false;
+          updateUndoRedoButtons();
+        });
+      });
+
+      // ================== CHANTIER 6 : Export PNG / JPG / SVG / PDF ==================
+      function downloadDataUrl(dataUrl, filename){
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+      function downloadBlob(blob, filename){
+        const url = URL.createObjectURL(blob);
+        downloadDataUrl(url, filename);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      }
+      let jsPdfLoadPromise = null;
+      function ensureJsPDF(){
+        if (window.jspdf) return Promise.resolve();
+        if (jsPdfLoadPromise) return jsPdfLoadPromise;
+        jsPdfLoadPromise = new Promise(function(resolve, reject){
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+        return jsPdfLoadPromise;
+      }
+      function safeFilename(){
+        return (document.getElementById("creation-title").value.trim() || "creation-golden").replace(/[^a-z0-9\-_]+/gi, "-");
+      }
+      function exportCanvas(format){
+        // On exporte TOUJOURS à la pleine résolution du format choisi (ex. 1080×1080), jamais à la
+        // taille réduite affichée à l'écran — d'où la compensation par 1/zoom actuel.
+        const zoom = libCanvas.getZoom() || 1;
+        const multiplier = 1 / zoom;
+        const name = safeFilename();
+        const status = document.getElementById("lib-status");
+        status.style.display = "inline"; status.style.color = "var(--gold)"; status.textContent = "Export...";
+
+        if (format === "svg"){
+          const svg = withRealBackgroundForExport(function(){ return libCanvas.toSVG(); });
+          downloadBlob(new Blob([svg], { type: "image/svg+xml" }), name + ".svg");
+          status.style.display = "none";
+          return;
+        }
+        if (format === "pdf"){
+          ensureJsPDF().then(function(){
+            const dataUrl = withRealBackgroundForExport(function(){
+              return libCanvas.toDataURL({ format: "png", quality: 1, multiplier: multiplier });
+            });
+            const orientation = logicalCanvasW >= logicalCanvasH ? "landscape" : "portrait";
+            const pdf = new window.jspdf.jsPDF({ orientation: orientation, unit: "px", format: [logicalCanvasW, logicalCanvasH] });
+            pdf.addImage(dataUrl, "PNG", 0, 0, logicalCanvasW, logicalCanvasH);
+            pdf.save(name + ".pdf");
+            status.style.display = "none";
+          }).catch(function(){
+            status.style.color = "#c85a5a"; status.textContent = "❌ Impossible de charger le module PDF (vérifie ta connexion)";
+            setTimeout(function(){ status.style.display = "none"; }, 3000);
+          });
+          return;
+        }
+
+        // PNG ou JPG
+        const isJpg = format === "jpg";
+        const previousBg = libCanvas.backgroundColor;
+        if (isJpg) libCanvas.backgroundColor = previousBg || "#ffffff"; // le JPEG ne supporte pas la transparence
+        else if (isTransparentBg) libCanvas.backgroundColor = null;
+        libCanvas.renderAll();
+        const dataUrl = libCanvas.toDataURL({ format: isJpg ? "jpeg" : "png", quality: isJpg ? 0.92 : 1, multiplier: multiplier });
+        libCanvas.backgroundColor = previousBg;
+        libCanvas.renderAll();
+        downloadDataUrl(dataUrl, name + "." + (isJpg ? "jpg" : "png"));
+        status.style.display = "none";
+      }
+      document.getElementById("export-btn").addEventListener("click", function(){
+        exportCanvas(document.getElementById("export-format-select").value);
+      });
+
+      document.getElementById("save-btn").addEventListener("click", saveCreation);
+
+      // ================== CHANTIER 7 (partage) : envoi natif vers WhatsApp/Instagram/etc. ==================
+      // Convertit une dataURL en Blob de façon SYNCHRONE (contrairement à fetch(dataUrl), qui est
+      // asynchrone et fait perdre au navigateur la permission d'interaction utilisateur nécessaire
+      // à navigator.share() sur mobile — c'était la cause du bouton Partager qui ne faisait rien).
+      function dataUrlToBlobSync(dataUrl){
+        const parts = dataUrl.split(",");
+        const mimeMatch = parts[0].match(/data:(.*?);base64/);
+        const mime = mimeMatch ? mimeMatch[1] : "image/png";
+        const binary = atob(parts[1]);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+        return new Blob([array], { type: mime });
+      }
+      document.getElementById("share-btn").addEventListener("click", function(){
+        const status = document.getElementById("lib-status");
+        const zoom = libCanvas.getZoom() || 1;
+        const previousBg = libCanvas.backgroundColor;
+        if (isTransparentBg) libCanvas.backgroundColor = null;
+        libCanvas.renderAll();
+        const dataUrl = libCanvas.toDataURL({ format: "png", quality: 1, multiplier: 1 / zoom });
+        libCanvas.backgroundColor = previousBg;
+        libCanvas.renderAll();
+
+        const blob = dataUrlToBlobSync(dataUrl);
+        const file = new File([blob], safeFilename() + ".png", { type: "image/png" });
+
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+          // Appel IMMÉDIAT, sans attendre de promesse asynchrone avant — sinon Chrome mobile
+          // refuse silencieusement d'ouvrir la fenêtre de partage.
+          navigator.share({
+            files: [file],
+            title: document.getElementById("creation-title").value.trim() || "Ma création Golden",
+            text: "Créé avec Golden Design Studio"
+          }).catch(function(err){
+            if (err && err.name === "AbortError") return;
+            console.error("Erreur de partage :", err);
+            downloadDataUrl(dataUrl, safeFilename() + ".png");
+          });
+          return;
+        }
+        // Pas de partage natif disponible (ex. certains navigateurs desktop) : on télécharge à la place.
+        status.style.display = "inline"; status.style.color = "var(--gold)"; status.textContent = "Téléchargement...";
+        downloadDataUrl(dataUrl, safeFilename() + ".png");
+        setTimeout(function(){ status.style.display = "none"; }, 1500);
+      });
+
+      // ---- Publication admin dans la bibliothèque publique ----
+      const session = getClientSession();
+      if (session && session.user && session.user.id === GOLDEN_ADMIN_UID){
+        document.getElementById("publish-row").style.display = "flex";
+      }
+      document.getElementById("publish-premium").addEventListener("change", function(){
+        document.getElementById("publish-price").style.display = this.checked ? "inline-block" : "none";
+      });
+      document.getElementById("publish-btn").addEventListener("click", publishTemplate);
+
+      // Reprend une création existante si ?id= est présent dans l'URL
+      const params = new URLSearchParams(window.location.search);
+      const editId = params.get("id");
+      if (editId) loadCreation(editId);
+
+      loadMyCreations();
+      loadTemplateGallery();
+    }
+
+    // ---- Galerie de modèles publics (gratuits et premium) ----
+    function loadTemplateGallery(){
+      const grid = document.getElementById("gallery-grid");
+      const session = getClientSession();
+
+      Promise.all([
+        supaRequest("bibliotheque_templates_golden?is_public=eq.true&select=id,title,thumbnail_url,is_premium,price&order=created_at.desc&limit=20"),
+        session ? clientRequest("template_purchases_golden?select=template_id") : Promise.resolve([])
+      ]).then(function(results){
+        const templates = results[0] || [];
+        const purchasedIds = (results[1] || []).map(function(p){ return p.template_id; });
+
+        if (templates.length === 0){
+          grid.innerHTML = '<p class="cm-empty">Aucun modèle publié pour le moment.</p>';
+          return;
+        }
+
+        grid.innerHTML = templates.map(function(t){
+          const unlocked = !t.is_premium || purchasedIds.indexOf(t.id) !== -1;
+          return '<div class="gallery-card">' +
+            (t.thumbnail_url ? '<img src="' + esc(t.thumbnail_url) + '">' : '') +
+            '<div class="gallery-card-body">' +
+              '<span class="gallery-card-badge ' + (t.is_premium ? "premium" : "free") + '">' + (t.is_premium ? "Premium — " + (t.price ? t.price.toFixed(2) + " $" : "") : "Gratuit") + '</span>' +
+              '<div class="gallery-card-title">' + esc(t.title) + '</div>' +
+              (unlocked
+                ? '<button type="button" class="btn btn-onlight" style="width:100%;justify-content:center;" onclick="useTemplate(\'' + t.id + '\')">Utiliser</button>'
+                : '<button type="button" class="btn btn-onlight" style="width:100%;justify-content:center;background:#2f6fed;border-color:#2f6fed;" onclick="unlockTemplate(\'' + t.id + '\')">🔓 Débloquer</button>'
+              ) +
+            '</div>' +
+          '</div>';
+        }).join("");
+      }).catch(function(err){
+        grid.innerHTML = '<p class="cm-empty">Galerie momentanément indisponible.</p>';
+        console.error("Erreur galerie :", err);
+      });
+    }
+
+    function useTemplate(templateId){
+      supaRequest("bibliotheque_templates_golden?id=eq." + templateId + "&select=canvas_json,title").then(function(rows){
+        if (!rows || !rows[0]) return;
+        currentCreationId = null; // nouvelle création, pas une modification du modèle original
+        document.getElementById("creation-title").value = rows[0].title || "";
+        libCanvas.loadFromJSON(rows[0].canvas_json, function(){ libCanvas.requestRenderAll(); });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }).catch(function(err){ alert("Impossible de charger ce modèle : " + err.message); });
+    }
+
+    function unlockTemplate(templateId){
+      if (!getClientSession()){
+        alert("Connecte-toi pour débloquer ce modèle.");
+        return;
+      }
+      if (!confirm("Débloquer ce modèle premium ? Le montant sera débité de ton solde Golden Pay.")) return;
+
+      clientRequest("rpc/unlock_premium_template", { method: "POST", body: { template_id_input: templateId } })
+        .then(function(){
+          alert("✅ Modèle débloqué !");
+          loadTemplateGallery();
+        })
+        .catch(function(err){
+          alert("❌ " + err.message);
+        });
+    }
+
+    function publishTemplate(){
+      const status = document.getElementById("lib-status");
+      const session = getClientSession();
+      const title = document.getElementById("creation-title").value.trim() || "Modèle sans titre";
+      const isPremium = document.getElementById("publish-premium").checked;
+      const price = isPremium ? (parseFloat(document.getElementById("publish-price").value) || 0) : 0;
+
+      status.style.display = "inline";
+      status.style.color = "var(--gold)";
+      status.textContent = "Publication...";
+
+      const canvasJson = libCanvas.toJSON();
+      const thumbDataUrl = withRealBackgroundForExport(function(){ return libCanvas.toDataURL({ format: "png", quality: 0.8, multiplier: 0.5 / (libCanvas.getZoom() || 1) }); });
+
+      fetch(thumbDataUrl).then(function(r){ return r.blob(); }).then(function(blob){
+        const file = new File([blob], "template-" + Date.now() + ".png", { type: "image/png" });
+        return uploadToSupabase(file, "templates");
+      }).then(function(thumbUrl){
+        return clientRequest("bibliotheque_templates_golden", {
+          method: "POST",
+          body: { user_id: session.user.id, title: title, thumbnail_url: thumbUrl, canvas_json: canvasJson, is_premium: isPremium, price: price, is_public: true }
+        });
+      }).then(function(){
+        status.textContent = "✅ Modèle publié dans la bibliothèque !";
+        setTimeout(function(){ status.style.display = "none"; }, 2500);
+      }).catch(function(err){
+        status.style.color = "#c85a5a";
+        status.textContent = "❌ " + err.message;
+      });
+    }
+
+    // ================== CHANTIER 5 : sauvegarde détaillée (project_objects_golden) ==================
+    // saveCreation(silent) : silent=true pour l'autosave (pas de message "Sauvegarde..." qui dérange).
+    function saveCreation(silent){
+      const status = document.getElementById("lib-status");
+      const title = document.getElementById("creation-title").value.trim() || "Sans titre";
+      const session = getClientSession();
+      if (!silent){
+        status.style.display = "inline";
+        status.style.color = "var(--gold)";
+        status.textContent = "Sauvegarde...";
+      }
+
+      const canvasJson = libCanvas.toJSON(["customName", "customType"]);
+      const thumbDataUrl = withRealBackgroundForExport(function(){
+        return libCanvas.toDataURL({ format: "png", quality: 0.8, multiplier: 0.5 / (libCanvas.getZoom() || 1) });
+      });
+
+      function saveObjectsAndHistory(projectId){
+        return clientRequest("project_objects_golden?project_id=eq." + projectId, { method: "DELETE" })
+          .then(function(){
+            const rows = (canvasJson.objects || []).map(function(obj, index){
+              return { project_id: projectId, object_type: obj.type, z_index: index, properties: obj };
+            });
+            if (rows.length === 0) return null;
+            return clientRequest("project_objects_golden", { method: "POST", body: rows });
+          })
+          .then(function(){
+            // Historique : un instantané à chaque sauvegarde (utile pour revenir en arrière plus tard)
+            return clientRequest("project_history_golden", {
+              method: "POST",
+              body: { project_id: projectId, canvas_snapshot: canvasJson }
+            });
+          });
+      }
+
+      fetch(thumbDataUrl).then(function(r){ return r.blob(); }).then(function(blob){
+        const file = new File([blob], "thumb-" + Date.now() + ".png", { type: "image/png" });
+        return uploadToSupabase(file, "creations");
+      }).then(function(thumbUrl){
+        const projectBody = {
+          user_id: session.user.id, title: title, thumbnail_url: thumbUrl,
+          width: logicalCanvasW, height: logicalCanvasH,
+          background_color: libCanvas.backgroundColor && typeof libCanvas.backgroundColor === "string" ? libCanvas.backgroundColor : "#ffffff",
+          is_background_transparent: !!isTransparentBg,
+          updated_at: new Date().toISOString()
+        };
+        if (currentCreationId){
+          return clientRequest("projects_golden?id=eq." + currentCreationId, { method: "PATCH", body: projectBody })
+            .then(function(){ return saveObjectsAndHistory(currentCreationId); });
+        }
+        return clientRequest("projects_golden", { method: "POST", body: projectBody }).then(function(rows){
+          if (rows && rows[0]) currentCreationId = rows[0].id;
+          return saveObjectsAndHistory(currentCreationId);
+        });
+      }).then(function(){
+        isDirtySinceSave = false;
+        if (!silent){
+          status.textContent = "✅ Sauvegardé !";
+          setTimeout(function(){ status.style.display = "none"; }, 2500);
+        }
+        loadMyCreations();
+      }).catch(function(err){
+        if (!silent){
+          status.style.display = "inline";
+          status.style.color = "#c85a5a";
+          status.textContent = "❌ " + err.message;
+        }
+        console.error("Erreur sauvegarde :", err);
+      });
+    }
+
+    // Charge un projet depuis le nouveau modèle (project_objects_golden). Si introuvable,
+    // se replie sur l'ancien modèle (user_creations_golden) pour les créations d'avant la migration.
+    function loadCreation(id){
+      Promise.all([
+        clientRequest("projects_golden?id=eq." + id + "&select=*"),
+        clientRequest("project_objects_golden?project_id=eq." + id + "&select=*&order=z_index.asc")
+      ]).then(function(results){
+        const projectRows = results[0], objectRows = results[1];
+        if (!projectRows || !projectRows[0]){
+          return loadLegacyCreation(id);
+        }
+        const proj = projectRows[0];
+        currentCreationId = proj.id;
+        document.getElementById("creation-title").value = proj.title || "";
+        logicalCanvasW = proj.width || 600;
+        logicalCanvasH = proj.height || 800;
+        isTransparentBg = !!proj.is_background_transparent;
+        const canvasJson = {
+          objects: (objectRows || []).map(function(row){ return row.properties; }),
+          background: isTransparentBg ? null : (proj.background_color || "#ffffff")
+        };
+        libCanvas.loadFromJSON(canvasJson, function(){
+          libCanvas.requestRenderAll();
+          fitCanvasToContainer();
+        });
+      }).catch(function(err){
+        console.error("Erreur chargement projet, tentative sur l'ancien modèle :", err);
+        loadLegacyCreation(id);
+      });
+    }
+    function loadLegacyCreation(id){
+      return clientRequest("user_creations_golden?id=eq." + id + "&select=*").then(function(rows){
+        if (!rows || !rows[0]) return;
+        const c = rows[0];
+        currentCreationId = c.id;
+        document.getElementById("creation-title").value = c.title || "";
+        libCanvas.loadFromJSON(c.canvas_json, function(){
+          libCanvas.requestRenderAll();
+          fitCanvasToContainer();
+        });
+      }).catch(function(err){ console.error("Erreur chargement création (ancien modèle) :", err); });
+    }
+
+    function loadMyCreations(){
+      const grid = document.getElementById("my-creations-grid");
+      Promise.all([
+        clientRequest("projects_golden?select=id,title,thumbnail_url,updated_at&order=updated_at.desc&limit=20").catch(function(){ return []; }),
+        clientRequest("user_creations_golden?select=id,title,thumbnail_url,updated_at&order=updated_at.desc&limit=20").catch(function(){ return []; })
+      ]).then(function(results){
+        const rows = (results[0] || []).concat(results[1] || [])
+          .sort(function(a, b){ return new Date(b.updated_at) - new Date(a.updated_at); })
+          .slice(0, 20);
+        if (rows.length === 0){
+          grid.innerHTML = '<p class="cm-empty">Aucune création pour le moment.</p>';
+          return;
+        }
+        grid.innerHTML = rows.map(function(c){
+          return '<div class="creation-card" onclick="window.location.href=\'bibliotheque.html?id=' + c.id + '\'">' +
+              (c.thumbnail_url ? '<img src="' + esc(c.thumbnail_url) + '">' : '<div style="aspect-ratio:1/1;background:#EDEAE0;"></div>') +
+              '<div class="cc-title">' + esc(c.title || "Sans titre") + '</div>' +
+            '</div>';
+          }).join("");
+        })
+        .catch(function(err){ console.error("Erreur liste créations :", err); });
+    }
+  </script>
+
+</body>
+</html>
