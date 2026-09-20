@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accès formation — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260822f">
+<style>
+  .fa-wrap{max-width:800px;margin:0 auto;padding:48px 20px 90px;}
+  .fa-wrap h1{font-size:22px;font-weight:600;margin-bottom:18px;}
+  .fa-player{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;margin-bottom:22px;}
+  .fa-player iframe, .fa-player video{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  .fa-summary-box{background:#fff;border:1px solid var(--stone-line);border-radius:12px;padding:18px;}
+  .fa-summary-box h3{font-size:14px;margin-bottom:10px;}
+  .fa-summary-text{font-size:13.5px;line-height:1.6;color:var(--text-mute);white-space:pre-wrap;margin-bottom:14px;}
+  .fa-copy-btn{background:var(--ink);color:#fff;border:none;border-radius:7px;padding:9px 16px;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .fa-status-box{background:#fff;border:1px solid var(--stone-line);border-radius:12px;padding:24px;text-align:center;}
+  .fa-status-box.pending{border-color:#e0c46a;background:#fdf8e9;}
+  .fa-status-box.error{border-color:#e0a0a0;background:#fdeeee;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="fa-wrap" id="fa-content">
+    <p class="cm-empty">Chargement...</p>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260913c"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      const container = document.getElementById("fa-content");
+      const params = new URLSearchParams(location.search);
+      const id = params.get("id");
+
+      if (!id){
+        container.innerHTML = '<div class="fa-status-box error"><p>Lien invalide : identifiant manquant.</p></div>';
+        return;
+      }
+
+      supaRequest("rpc/get_formation_access", { method: "POST", body: { p_id: id } })
+        .then(function(rows){
+          const row = rows && rows[0];
+          if (!row){
+            container.innerHTML = '<div class="fa-status-box error"><p>Ce lien n\'est plus valide, ou l\'inscription est introuvable.</p></div>';
+            return;
+          }
+          if (row.status !== "validée"){
+            container.innerHTML =
+              '<div class="fa-status-box pending">' +
+                '<p><b>Ton accès n\'est pas encore activé.</b></p>' +
+                '<p style="margin-top:8px;font-size:13px;color:var(--text-mute);">On vérifie ton paiement et t\'enverras un e-mail dès que c\'est confirmé.</p>' +
+              '</div>';
+            return;
+          }
+
+          const player = buildPlayer(row.content_url);
+          container.innerHTML =
+            '<h1>' + esc(row.title) + '</h1>' +
+            '<div class="fa-player">' + player + '</div>' +
+            (row.summary ?
+              '<div class="fa-summary-box">' +
+                '<h3>📝 Résumé de la formation</h3>' +
+                '<div class="fa-summary-text" id="fa-summary-text">' + esc(row.summary) + '</div>' +
+                '<button type="button" class="fa-copy-btn" id="fa-copy-btn">Copier le résumé</button>' +
+              '</div>'
+            : '');
+
+          const copyBtn = document.getElementById("fa-copy-btn");
+          if (copyBtn){
+            copyBtn.addEventListener("click", function(){
+              navigator.clipboard.writeText(row.summary).then(function(){
+                copyBtn.textContent = "✅ Copié !";
+                setTimeout(function(){ copyBtn.textContent = "Copier le résumé"; }, 2000);
+              });
+            });
+          }
+        })
+        .catch(function(err){
+          container.innerHTML = '<div class="fa-status-box error"><p>Erreur de chargement. Réessaie dans un instant.</p></div>';
+          console.error("Erreur accès formation :", err);
+        });
+    });
+
+    // Détecte si content_url est un lien YouTube -> lecteur intégré (reste sur Golden).
+    // Sinon, considère que c'est un fichier vidéo direct -> lecteur natif.
+    function buildPlayer(url){
+      if (!url) return '<p style="color:#fff;padding:20px;">Vidéo non disponible.</p>';
+      const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{6,})/);
+      if (ytMatch){
+        const videoId = ytMatch[1];
+        return '<iframe src="https://www.youtube.com/embed/' + videoId + '?rel=0&modestbranding=1" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+      }
+      return '<video src="' + esc(url) + '" controls playsinline></video>';
+    }
+  </script>
+
+</body>
+</html>
