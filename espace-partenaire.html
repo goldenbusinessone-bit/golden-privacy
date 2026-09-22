@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace partenaire — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260822f">
+<style>
+  :root{
+    --gp-deep:#0d1b3d; --gp-navy:#1a3a7a; --gp-blue:#2a5cb8; --gp-blue-soft:#6f9beb;
+  }
+
+  body{background:#f7f6f2;}
+
+  /* ---------- Écran de connexion ---------- */
+  .ep-auth-wrap{min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+  .ep-auth-card{width:100%;max-width:380px;}
+  .ep-auth-logo{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--gp-deep),var(--gp-blue));display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 18px;box-shadow:0 10px 24px rgba(26,58,122,.28);}
+  .ep-auth-card h1{text-align:center;font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin-bottom:6px;color:var(--ink);}
+  .ep-auth-card .ep-auth-sub{text-align:center;font-size:13px;color:var(--text-mute);margin-bottom:24px;}
+  .ep-box{background:#fff;border:1px solid var(--stone-line);border-radius:14px;padding:22px;margin-bottom:18px;}
+  .ep-box label{display:block;font-size:12.5px;font-weight:600;margin:12px 0 5px;color:var(--ink);}
+  .ep-box label:first-of-type{margin-top:0;}
+  .ep-box input, .ep-box textarea{width:100%;padding:10px 11px;border:1px solid var(--stone-line);border-radius:8px;font-size:13.5px;font-family:inherit;box-sizing:border-box;transition:border-color .15s;}
+  .ep-box input:focus, .ep-box textarea:focus{outline:none;border-color:var(--gp-blue);}
+  .ep-box textarea{min-height:80px;resize:vertical;}
+  .ep-btn{background:linear-gradient(135deg,var(--gp-deep),var(--gp-blue));color:#fff;border:none;border-radius:9px;padding:12px 0;font-size:13.5px;font-weight:700;cursor:pointer;width:100%;margin-top:16px;letter-spacing:.01em;transition:transform .12s, box-shadow .12s;}
+  .ep-btn:hover{box-shadow:0 8px 18px rgba(26,58,122,.25);}
+  .ep-btn:active{transform:scale(.98);}
+  .ep-btn:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none;}
+  .ep-btn-secondary{background:#EDEAE0;color:var(--ink);box-shadow:none;}
+  .ep-status{font-size:12.5px;margin-top:10px;display:none;}
+
+  /* ---------- Toasts courts ---------- */
+  .ep-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:999px;font-size:12.5px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.22);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:999;white-space:nowrap;}
+  .ep-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .ep-toast.error{background:#a83e3e;}
+  .ep-toast.success{background:#1a6b45;}
+
+  /* ---------- Bandeau boutique (dashboard) ---------- */
+  .ep-hero{
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,var(--gp-deep) 0%,var(--gp-navy) 50%,var(--gp-blue) 100%);
+    color:#fff;padding:30px 20px 26px;
+  }
+  .ep-hero::before, .ep-hero::after{
+    content:"";position:absolute;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.16),transparent 70%);
+    animation:epFloat 10s ease-in-out infinite;pointer-events:none;
+  }
+  .ep-hero::before{width:260px;height:260px;top:-120px;right:-60px;}
+  .ep-hero::after{width:190px;height:190px;bottom:-100px;left:-40px;animation-delay:3s;}
+  @keyframes epFloat{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-14px) scale(1.07);}}
+  .ep-hero-inner{position:relative;max-width:760px;margin:0 auto;}
+  .ep-hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  .ep-hero-name{display:flex;align-items:center;gap:7px;font-family:'Fraunces',serif;font-size:21px;font-weight:600;}
+  .ep-verified{flex-shrink:0;display:inline-flex;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25));}
+  .ep-hero-tag{font-size:12.5px;color:#c9d6f2;margin-top:4px;}
+  .ep-logout{flex-shrink:0;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:8px 13px;font-size:12px;font-weight:600;cursor:pointer;}
+  .ep-mode-pill{position:relative;display:inline-flex;align-items:center;gap:7px;margin-top:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;}
+  .ep-pulse{width:7px;height:7px;border-radius:50%;background:#4ee08a;flex-shrink:0;box-shadow:0 0 0 rgba(78,224,138,.6);animation:epPulse 2s infinite;}
+  .ep-pulse.amber{background:#f0c04e;box-shadow:0 0 0 rgba(240,192,78,.6);}
+  @keyframes epPulse{0%{box-shadow:0 0 0 0 rgba(78,224,138,.5);}70%{box-shadow:0 0 0 8px rgba(78,224,138,0);}100%{box-shadow:0 0 0 0 rgba(78,224,138,0);}}
+
+  .ep-stats-row{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px;}
+  .ep-stat-card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px 8px;text-align:center;}
+  .ep-stat-num{font-family:'Fraunces',serif;font-size:22px;font-weight:600;line-height:1;}
+  .ep-stat-label{font-size:10.5px;color:#c9d6f2;margin-top:4px;}
+
+  /* ---------- Onglets ---------- */
+  .ep-tabs{position:sticky;top:0;z-index:20;background:#f7f6f2;border-bottom:1px solid var(--stone-line);display:flex;gap:2px;max-width:760px;margin:0 auto;padding:0 20px;overflow-x:auto;}
+  .ep-tab{flex-shrink:0;background:none;border:none;padding:14px 14px 12px;font-size:13px;font-weight:600;color:var(--text-mute);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+  .ep-tab.active{color:var(--gp-navy);border-bottom-color:var(--gp-blue);}
+
+  .ep-wrap{max-width:760px;margin:0 auto;padding:24px 20px 90px;}
+  .ep-panel{display:none;}
+  .ep-panel.active{display:block;}
+
+  .ep-section-label{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+  .ep-section-hint{font-size:12px;color:var(--text-mute);margin-bottom:14px;line-height:1.5;}
+
+  .ep-shop-link{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--gp-navy);text-decoration:none;background:#eaf0fb;border-radius:8px;padding:9px 14px;margin-top:4px;}
+
+  .ep-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .ep-product{border:1px solid var(--stone-line);border-radius:12px;padding:12px;margin-bottom:10px;display:flex;gap:12px;background:#fff;}
+  .ep-product-thumb{width:58px;height:58px;border-radius:8px;background:var(--stone-line);flex-shrink:0;overflow:hidden;}
+  .ep-product-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .ep-product-body{flex:1;min-width:0;}
+  .ep-product-name{font-size:13.5px;font-weight:700;color:var(--ink);}
+  .ep-product-price{font-size:12.5px;color:var(--text-mute);}
+  .ep-product-price .old{text-decoration:line-through;margin-left:5px;}
+  .status-pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:4px;}
+  .status-pill.live{background:#e4f5ea;color:#1a6b45;}
+  .status-pill.pending{background:#fdf1d6;color:#8a6d1a;}
+  .ep-product-actions{display:flex;gap:6px;margin-top:8px;}
+  .ep-product-actions button{padding:6px 10px;border-radius:7px;border:1px solid var(--stone-line);background:#fff;font-size:11.5px;cursor:pointer;font-weight:600;}
+  .ep-product-actions button.danger{color:#a83e3e;}
+
+  .img-pick-hint{font-size:11.5px;color:var(--text-mute);display:none;margin-top:4px;}
+  .img-pick-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+  .img-pick{position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;}
+  .img-pick.main{border-color:var(--gp-blue);}
+  .img-pick img, .img-pick video{width:100%;height:100%;object-fit:cover;}
+  .img-pick-remove{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:flex;align-items:center;justify-content:center;}
+  .img-pick-badge{position:absolute;bottom:0;left:0;right:0;background:var(--gp-blue);color:#fff;font-size:9px;text-align:center;padding:1px 0;}
+
+  .ep-empty{font-size:13px;color:var(--text-mute);text-align:center;padding:24px 10px;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <!-- ===================== ÉCRAN DE CONNEXION ===================== -->
+  <div id="ep-login-view">
+    <div class="ep-auth-wrap">
+      <div class="ep-auth-card">
+        <div class="ep-auth-logo">🤝</div>
+        <h1>Espace partenaire</h1>
+        <p class="ep-auth-sub">Gère ta boutique Golden en toute autonomie.</p>
+        <div class="ep-box">
+          <label>E-mail</label>
+          <input id="ep-email" type="email" placeholder="ton@email.com" autocomplete="username">
+          <label>Mot de passe</label>
+          <input id="ep-password" type="password" placeholder="Mot de passe" autocomplete="current-password">
+          <button class="ep-btn" id="ep-login-btn">Se connecter</button>
+          <p class="ep-status" id="ep-login-status"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TABLEAU DE BORD ===================== -->
+  <div id="ep-dashboard-view" style="display:none;">
+
+    <div class="ep-hero">
+      <div class="ep-hero-inner">
+        <div class="ep-hero-top">
+          <div>
+            <div class="ep-hero-name">
+              <span id="ep-shop-name">Ma boutique</span>
+              <span id="ep-verified-slot"></span>
+            </div>
+            <div class="ep-hero-tag">Tableau de bord partenaire Golden</div>
+          </div>
+          <button class="ep-logout" id="ep-logout-btn">Se déconnecter</button>
+        </div>
+
+        <div class="ep-mode-pill" id="ep-mode-pill">
+          <span class="ep-pulse" id="ep-mode-pulse"></span>
+          <span id="ep-mode-text">Chargement…</span>
+        </div>
+
+        <div class="ep-stats-row">
+          <div class="ep-stat-card"><div class="ep-stat-num" id="ep-stat-live">0</div><div class="ep-stat-label">En ligne</div></div>
+          <div class="ep-stat-card"><div class="ep-stat-num" id="ep-stat-pending">0</div><div class="ep-stat-label">En attente</div></div>
+          <div class="ep-stat-card"><div class="ep-stat-num" id="ep-stat-total">0</div><div class="ep-stat-label">Produits au total</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ep-tabs">
+      <button class="ep-tab active" data-tab="apercu">Aperçu</button>
+      <button class="ep-tab" data-tab="produits">Produits</button>
+      <button class="ep-tab" data-tab="boutique">Ma boutique</button>
+      <button class="ep-tab" data-tab="parametres">Paramètres</button>
+    </div>
+
+    <div class="ep-wrap">
+
+      <!-- ---- Aperçu ---- -->
+      <div class="ep-panel active" id="panel-apercu">
+        <div class="ep-box">
+          <div class="ep-section-label">Bienvenue sur ton espace</div>
+          <p class="ep-section-hint">Suis l'état de ta boutique, ajoute des produits et développe ta présence sur Golden depuis cet endroit.</p>
+          <a href="#" id="ep-view-shop-link" class="ep-shop-link" target="_blank">🔗 Voir ma boutique publique</a>
+        </div>
+        <div class="ep-box">
+          <div class="ep-section-label">Derniers produits</div>
+          <p class="ep-section-hint">Un aperçu rapide — gère-les en détail dans l'onglet Produits.</p>
+          <div id="ep-recent-products"></div>
+        </div>
+      </div>
+
+      <!-- ---- Produits ---- -->
+      <div class="ep-panel" id="panel-produits">
+        <div class="ep-box">
+          <div class="ep-section-label">Ajouter / modifier un produit</div>
+          <p class="ep-section-hint">Chaque nouveau produit repasse par une validation de l'équipe Golden avant d'être visible publiquement — une fois ta boutique validée une première fois, tu publies ensuite librement.</p>
+          <input type="hidden" id="ep-edit-id">
+          <label>Nom du produit</label>
+          <input id="ep-name" type="text">
+          <label>Description</label>
+          <textarea id="ep-desc"></textarea>
+          <div class="ep-row2">
+            <div><label>Prix ($)</label><input id="ep-price" type="number" step="0.01"></div>
+            <div><label>Remise (%) — optionnel</label><input id="ep-discount" type="number" min="0" max="100"></div>
+          </div>
+          <label>Catégorie</label>
+          <input id="ep-category" type="text">
+          <div class="ep-row2">
+            <div><label>Téléphone de contact — optionnel</label><input id="ep-phone" type="tel" placeholder="+243..."></div>
+            <div><label>Lien direct — optionnel</label><input id="ep-link" type="text" placeholder="Réseau social, catalogue..."></div>
+          </div>
+          <label>Adresse de retrait — optionnel</label>
+          <input id="ep-pickup" type="text" placeholder="Ville, quartier...">
+          <label>Photos / vidéos</label>
+          <input id="ep-images" type="file" accept="image/*,video/*" multiple>
+          <div class="img-pick-preview" id="ep-images-preview"></div>
+          <p class="img-pick-hint" id="ep-images-hint">Touche une photo pour la mettre en principale, ✕ pour la retirer.</p>
+          <button class="ep-btn" id="ep-submit-btn">Envoyer pour validation</button>
+          <button class="ep-btn ep-btn-secondary" id="ep-cancel-edit" style="display:none;">Annuler la modification</button>
+          <p class="ep-status" id="ep-form-status"></p>
+        </div>
+
+        <div class="ep-box">
+          <div class="ep-section-label">Mes produits</div>
+          <div id="ep-products-list" style="margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <!-- ---- Ma boutique ---- -->
+      <div class="ep-panel" id="panel-boutique">
+        <div class="ep-box">
+          <div class="ep-section-label">Informations de ma boutique</div>
+          <p class="ep-section-hint">Le nom de ta boutique est fixé lors de ton activation par Golden ; contacte l'équipe pour le modifier.</p>
+          <label>Nom de la boutique</label>
+          <input id="ep-shop-name-field" type="text" disabled>
+          <label>Description publique</label>
+          <textarea id="ep-shop-bio" placeholder="Présente ta boutique aux visiteurs en quelques phrases..."></textarea>
+          <button class="ep-btn" id="ep-save-bio-btn">Enregistrer</button>
+          <p class="ep-status" id="ep-bio-status"></p>
+        </div>
+        <div class="ep-box">
+          <div class="ep-section-label">Statut de vérification</div>
+          <p class="ep-section-hint" id="ep-verif-explain"></p>
+        </div>
+      </div>
+
+      <!-- ---- Paramètres ---- -->
+      <div class="ep-panel" id="panel-parametres">
+        <div class="ep-box">
+          <div class="ep-section-label">Changer mon mot de passe</div>
+          <label>Nouveau mot de passe</label>
+          <input id="ep-new-password" type="password" autocomplete="new-password">
+          <button class="ep-btn ep-btn-secondary" id="ep-change-password-btn">Mettre à jour</button>
+          <p class="ep-status" id="ep-password-status"></p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="ep-toast" class="ep-toast"></div>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260913c"></script>
+  <script>
+    const GOLDEN_SUPABASE_URL = "https://tmvkalnetmgcditrpenz.supabase.co";
+    const GOLDEN_SUPABASE_KEY = "sb_publishable_jLjHM7CX2J7vSbIzTO0uSg_VECOhgLP";
+    let epProfile = null;
+    let epProductsCache = [];
+
+    // ---- Requête authentifiée en tant que partenaire connecté ----
+    function partnerRequest(path, opts){
+      opts = opts || {};
+      const token = localStorage.getItem("golden_partner_token") || GOLDEN_SUPABASE_KEY;
+      const headers = Object.assign({
+        "apikey": GOLDEN_SUPABASE_KEY,
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      }, opts.headers || {});
+      if (opts.method && opts.method !== "GET") headers["Prefer"] = "return=representation";
+      return fetch(GOLDEN_SUPABASE_URL + "/rest/v1/" + path, {
+        method: opts.method || "GET",
+        headers: headers,
+        body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined
+      }).then(function(res){
+        return res.text().then(function(text){
+          const data = text ? JSON.parse(text) : null;
+          if (!res.ok) throw new Error((data && (data.message || data.error_description || data.msg)) || "Erreur serveur");
+          return data;
+        });
+      });
+    }
+
+    // ---- Toast court et professionnel ----
+    let epToastTimer = null;
+    function toast(msg, type){
+      const el = document.getElementById("ep-toast");
+      el.textContent = msg;
+      el.className = "ep-toast show" + (type ? " " + type : "");
+      clearTimeout(epToastTimer);
+      epToastTimer = setTimeout(function(){ el.classList.remove("show"); }, 2600);
+    }
+    function showStatus(el, msg, ok){
+      el.style.display = "block";
+      el.style.color = ok ? "#1a6b45" : "#a83e3e";
+      el.textContent = msg;
+    }
+
+    // ---- Badge bleu de vérification (style certifié) ----
+    const VERIFIED_BADGE_SVG = '<svg class="ep-verified" width="18" height="18" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">' +
+      '<path fill="#2a5cb8" d="M11 0l2.1 2.3 3-.7 1.1 2.9 2.9 1.1-.7 3L21.6 11l-2.2 2.4.7 3-2.9 1.1-1.1 2.9-3-.7L11 22l-2.1-2.3-3 .7-1.1-2.9-2.9-1.1.7-3L.4 11l2.2-2.4-.7-3 2.9-1.1L5.9 1.6l3 .7z"/>' +
+      '<path fill="#fff" d="M9.3 15.4l-3.6-3.6 1.3-1.3 2.3 2.3 5.3-5.3 1.3 1.3z"/>' +
+      '</svg>';
+
+    // ---- Onglets ----
+    document.querySelectorAll(".ep-tab").forEach(function(tab){
+      tab.addEventListener("click", function(){
+        document.querySelectorAll(".ep-tab").forEach(function(t){ t.classList.remove("active"); });
+        document.querySelectorAll(".ep-panel").forEach(function(p){ p.classList.remove("active"); });
+        tab.classList.add("active");
+        document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+      });
+    });
+
+    // ---- Image picker ----
+    function setupImagePicker(inputId, previewId, hintId){
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(previewId);
+      const hint = document.getElementById(hintId);
+      let mainIndex = 0;
+      let allFiles = [];
+      function render(){
+        preview.innerHTML = "";
+        hint.style.display = allFiles.length > 1 ? "block" : "none";
+        allFiles.forEach(function(file, i){
+          const url = URL.createObjectURL(file);
+          const isVideo = file.type.startsWith("video/");
+          const div = document.createElement("div");
+          div.className = "img-pick" + (i === mainIndex ? " main" : "");
+          div.innerHTML = (isVideo ? '<video src="' + url + '" muted></video>' : '<img src="' + url + '">') +
+            (i === mainIndex ? '<span class="img-pick-badge">Principale</span>' : '') +
+            '<span class="img-pick-remove">✕</span>';
+          div.addEventListener("click", function(e){
+            if (e.target.classList.contains("img-pick-remove")){
+              allFiles.splice(i, 1);
+              if (mainIndex >= allFiles.length) mainIndex = 0;
+              render();
+              return;
+            }
+            mainIndex = i;
+            render();
+          });
+          preview.appendChild(div);
+        });
+      }
+      input.addEventListener("change", function(){
+        Array.from(input.files).forEach(function(f){ allFiles.push(f); });
+        input.value = "";
+        render();
+      });
+      return {
+        reset: function(){ mainIndex = 0; allFiles = []; preview.innerHTML = ""; hint.style.display = "none"; },
+        getOrderedFiles: function(){
+          if (allFiles.length === 0) return [];
+          const main = allFiles[mainIndex];
+          const rest = allFiles.filter(function(_, i){ return i !== mainIndex; });
+          return [main].concat(rest);
+        }
+      };
+    }
+    const epImagePicker = setupImagePicker("ep-images", "ep-images-preview", "ep-images-hint");
+
+    // ---- Connexion ----
+    document.getElementById("ep-login-btn").addEventListener("click", function(){
+      const btn = this;
+      const email = document.getElementById("ep-email").value.trim();
+      const password = document.getElementById("ep-password").value;
+      const status = document.getElementById("ep-login-status");
+      if (!email || !password) return;
+
+      btn.disabled = true;
+      btn.textContent = "Connexion...";
+
+      fetch(GOLDEN_SUPABASE_URL + "/auth/v1/token?grant_type=password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": GOLDEN_SUPABASE_KEY },
+        body: JSON.stringify({ email: email, password: password })
+      }).then(function(res){
+        return res.json().then(function(data){ return { ok: res.ok, data: data }; });
+      }).then(function(result){
+        if (!result.ok) throw new Error(result.data.error_description || result.data.msg || "Connexion impossible.");
+        localStorage.setItem("golden_partner_token", result.data.access_token);
+        return loadPartnerProfile();
+      }).catch(function(err){
+        showStatus(status, "❌ " + err.message, false);
+        btn.disabled = false;
+        btn.textContent = "Se connecter";
+      });
+    });
+
+    function loadPartnerProfile(){
+      return partnerRequest("partenaires_golden?select=*&limit=1").then(function(rows){
+        const profile = rows && rows[0];
+        if (!profile){
+          localStorage.removeItem("golden_partner_token");
+          throw new Error("Ce compte n'est pas reconnu comme partenaire actif.");
+        }
+        epProfile = profile;
+
+        document.getElementById("ep-shop-name").textContent = "🏪 " + profile.business_name;
+        document.getElementById("ep-shop-name-field").value = profile.business_name || "";
+        document.getElementById("ep-shop-bio").value = profile.store_bio || "";
+        document.getElementById("ep-verified-slot").innerHTML = profile.first_validated ? VERIFIED_BADGE_SVG : "";
+
+        const pulse = document.getElementById("ep-mode-pulse");
+        const modeText = document.getElementById("ep-mode-text");
+        const verifExplain = document.getElementById("ep-verif-explain");
+        if (profile.first_validated){
+          pulse.classList.remove("amber");
+          modeText.textContent = "Publication libre activée";
+          verifExplain.textContent = "Ta boutique est certifiée par Golden — le badge bleu apparaît à côté de ton nom. Tes nouveaux produits sont désormais visibles immédiatement, sans attente.";
+        } else {
+          pulse.classList.add("amber");
+          modeText.textContent = "Premier produit en attente de vérification";
+          verifExplain.textContent = "Ton tout premier produit publié sera vérifié par l'équipe Golden. Une fois validé, ta boutique reçoit le badge bleu de certification et tu publies ensuite librement.";
+        }
+
+        const shopUrl = "boutique-vendeur.html?nom=" + encodeURIComponent(profile.business_name || "");
+        document.getElementById("ep-view-shop-link").href = shopUrl;
+
+        document.getElementById("ep-login-view").style.display = "none";
+        document.getElementById("ep-dashboard-view").style.display = "block";
+        loadMyProducts();
+      });
+    }
+
+    // ---- Déconnexion ----
+    document.getElementById("ep-logout-btn").addEventListener("click", function(){
+      localStorage.removeItem("golden_partner_token");
+      location.reload();
+    });
+
+    // ---- Mes produits ----
+    function loadMyProducts(){
+      const list = document.getElementById("ep-products-list");
+      const recent = document.getElementById("ep-recent-products");
+      partnerRequest("produits_golden?select=*&order=created_at.desc")
+        .then(function(rows){
+          epProductsCache = rows || [];
+          updateStats();
+
+          if (epProductsCache.length === 0){
+            list.innerHTML = '<p class="ep-empty">Aucun produit pour le moment. Ajoute ton premier article ci-dessus.</p>';
+            recent.innerHTML = '<p class="ep-empty">Rien à afficher pour l\'instant.</p>';
+            return;
+          }
+
+          list.innerHTML = "";
+          epProductsCache.forEach(function(p){ list.appendChild(renderProductRow(p)); });
+
+          recent.innerHTML = "";
+          epProductsCache.slice(0, 3).forEach(function(p){ recent.appendChild(renderProductRow(p, true)); });
+        })
+        .catch(function(err){ console.error("Erreur chargement produits :", err); });
+    }
+
+    function renderProductRow(p, compact){
+      const thumb = (p.images && p.images[0]) ? p.images[0] : "";
+      const hasDiscount = p.discount_percent && p.discount_percent > 0;
+      const finalPrice = hasDiscount ? (p.price * (1 - p.discount_percent / 100)) : p.price;
+
+      const div = document.createElement("div");
+      div.className = "ep-product";
+      div.innerHTML =
+        '<div class="ep-product-thumb">' + (thumb ? '<img src="' + esc(thumb) + '">' : '') + '</div>' +
+        '<div class="ep-product-body">' +
+          '<div class="ep-product-name">' + esc(p.name) + '</div>' +
+          '<div class="ep-product-price">' + (finalPrice != null ? finalPrice.toFixed(2) + ' $' : '') +
+            (hasDiscount ? ' <span class="old">' + p.price.toFixed(2) + ' $</span>' : '') + '</div>' +
+          '<span class="status-pill ' + (p.is_public ? "live" : "pending") + '">' + (p.is_public ? "En ligne" : "En attente") + '</span>' +
+        '</div>';
+
+      if (!compact){
+        const actions = document.createElement("div");
+        actions.className = "ep-product-actions";
+        actions.style.marginLeft = "auto";
+        actions.style.alignSelf = "flex-start";
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Modifier";
+        editBtn.onclick = function(){ editMyProduct(p); };
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Supprimer";
+        delBtn.className = "danger";
+        delBtn.onclick = function(){ deleteMyProduct(p.id); };
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+        div.appendChild(actions);
+      }
+      return div;
+    }
+
+    function updateStats(){
+      const live = epProductsCache.filter(function(p){ return p.is_public; }).length;
+      const total = epProductsCache.length;
+      document.getElementById("ep-stat-live").textContent = live;
+      document.getElementById("ep-stat-pending").textContent = total - live;
+      document.getElementById("ep-stat-total").textContent = total;
+    }
+
+    function editMyProduct(p){
+      document.getElementById("ep-edit-id").value = p.id;
+      document.getElementById("ep-name").value = p.name || "";
+      document.getElementById("ep-desc").value = p.description || "";
+      document.getElementById("ep-price").value = p.price != null ? p.price : "";
+      document.getElementById("ep-discount").value = p.discount_percent || "";
+      document.getElementById("ep-category").value = p.category || "";
+      document.getElementById("ep-phone").value = p.contact_phone || "";
+      document.getElementById("ep-link").value = p.seller_link || "";
+      document.getElementById("ep-pickup").value = p.pickup_address || "";
+      document.getElementById("ep-submit-btn").textContent = "Enregistrer les modifications";
+      document.getElementById("ep-cancel-edit").style.display = "block";
+      document.querySelector('.ep-tab[data-tab="produits"]').click();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    document.getElementById("ep-cancel-edit").addEventListener("click", function(){
+      resetProductForm();
+    });
+
+    function resetProductForm(){
+      document.getElementById("ep-edit-id").value = "";
+      document.getElementById("ep-name").value = "";
+      document.getElementById("ep-desc").value = "";
+      document.getElementById("ep-price").value = "";
+      document.getElementById("ep-discount").value = "";
+      document.getElementById("ep-category").value = "";
+      document.getElementById("ep-phone").value = "";
+      document.getElementById("ep-link").value = "";
+      document.getElementById("ep-pickup").value = "";
+      document.getElementById("ep-submit-btn").textContent = "Envoyer pour validation";
+      document.getElementById("ep-cancel-edit").style.display = "none";
+      epImagePicker.reset();
+    }
+
+    function deleteMyProduct(id){
+      if (!confirm("Supprimer ce produit ?")) return;
+      partnerRequest("produits_golden?id=eq." + id, { method: "DELETE" })
+        .then(function(){ toast("Produit supprimé.", "success"); loadMyProducts(); })
+        .catch(function(err){ toast("Erreur : " + err.message, "error"); });
+    }
+
+    // ---- Envoi / modification d'un produit ----
+    document.getElementById("ep-submit-btn").addEventListener("click", function(){
+      const btn = this;
+      const status = document.getElementById("ep-form-status");
+      const editId = document.getElementById("ep-edit-id").value;
+      const name = document.getElementById("ep-name").value.trim();
+      const description = document.getElementById("ep-desc").value.trim();
+      const price = parseFloat(document.getElementById("ep-price").value);
+      const discount = parseFloat(document.getElementById("ep-discount").value);
+      const category = document.getElementById("ep-category").value.trim();
+      const phone = document.getElementById("ep-phone").value.trim();
+      const link = document.getElementById("ep-link").value.trim();
+      const pickup = document.getElementById("ep-pickup").value.trim();
+      const files = epImagePicker.getOrderedFiles();
+
+      if (!name || isNaN(price)){
+        showStatus(status, "Nom et prix requis.", false);
+        return;
+      }
+
+      btn.disabled = true;
+      showStatus(status, files.length ? "Envoi des photos..." : "Envoi en cours...", true);
+
+      const uploads = files.map(function(f){ return uploadToSupabase(f, "produits"); });
+
+      Promise.all(uploads).then(function(urls){
+        return partnerRequest("partenaires_golden?select=first_validated&limit=1").then(function(rows){
+          const freshlyValidated = rows && rows[0] && rows[0].first_validated === true;
+          epProfile.first_validated = freshlyValidated;
+
+          const body = {
+            name: name,
+            description: description,
+            price: price,
+            discount_percent: isNaN(discount) ? null : discount,
+            category: category,
+            contact_phone: phone || null,
+            seller_link: link || null,
+            pickup_address: pickup || null,
+            partner_name: epProfile.business_name,
+            is_public: freshlyValidated
+          };
+          if (urls.length) body.images = urls;
+
+          return editId
+            ? partnerRequest("produits_golden?id=eq." + editId, { method: "PATCH", body: body })
+            : partnerRequest("produits_golden", { method: "POST", body: body });
+        });
+      }).then(function(){
+        toast(epProfile.first_validated ? "Produit publié." : "Envoyé pour validation.", "success");
+        status.style.display = "none";
+        resetProductForm();
+        btn.disabled = false;
+        loadMyProducts();
+      }).catch(function(err){
+        showStatus(status, "❌ " + err.message, false);
+        btn.disabled = false;
+      });
+    });
+
+    // ---- Ma boutique : description publique ----
+    document.getElementById("ep-save-bio-btn").addEventListener("click", function(){
+      const status = document.getElementById("ep-bio-status");
+      const bio = document.getElementById("ep-shop-bio").value.trim();
+      partnerRequest("partenaires_golden?id=eq." + epProfile.id, { method: "PATCH", body: { store_bio: bio } })
+        .then(function(){ toast("Modifications enregistrées.", "success"); status.style.display = "none"; })
+        .catch(function(err){ showStatus(status, "❌ " + err.message, false); });
+    });
+
+    // ---- Changer le mot de passe ----
+    document.getElementById("ep-change-password-btn").addEventListener("click", function(){
+      const btn = this;
+      const newPassword = document.getElementById("ep-new-password").value;
+      const status = document.getElementById("ep-password-status");
+      if (!newPassword || newPassword.length < 6){
+        showStatus(status, "6 caractères minimum.", false);
+        return;
+      }
+      btn.disabled = true;
+      fetch(GOLDEN_SUPABASE_URL + "/auth/v1/user", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": GOLDEN_SUPABASE_KEY,
+          "Authorization": "Bearer " + localStorage.getItem("golden_partner_token")
+        },
+        body: JSON.stringify({ password: newPassword })
+      }).then(function(res){
+        return res.json().then(function(data){ return { ok: res.ok, data: data }; });
+      }).then(function(result){
+        if (!result.ok) throw new Error(result.data.msg || "Erreur.");
+        toast("Mot de passe mis à jour.", "success");
+        status.style.display = "none";
+        document.getElementById("ep-new-password").value = "";
+        btn.disabled = false;
+      }).catch(function(err){
+        showStatus(status, "❌ " + err.message, false);
+        btn.disabled = false;
+      });
+    });
+
+    // ---- Au chargement : si un jeton est déjà stocké, tenter de continuer la session ----
+    document.addEventListener("DOMContentLoaded", function(){
+      if (localStorage.getItem("golden_partner_token")){
+        loadPartnerProfile().catch(function(){
+          localStorage.removeItem("golden_partner_token");
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>
