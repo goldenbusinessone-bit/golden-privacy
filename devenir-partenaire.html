@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créer ma boutique — Agence Golden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260822f">
+<style>
+  .dp-hero{
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#0d1b3d 0%,#1a3a7a 45%,#2a5cb8 100%);
+    color:#fff;padding:56px 20px 64px;text-align:center;
+  }
+  .dp-hero::before, .dp-hero::after{
+    content:"";position:absolute;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.14),transparent 70%);
+    animation:dpFloat 9s ease-in-out infinite;
+  }
+  .dp-hero::before{width:280px;height:280px;top:-100px;left:-80px;}
+  .dp-hero::after{width:220px;height:220px;bottom:-90px;right:-60px;animation-delay:2.5s;}
+  @keyframes dpFloat{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-16px) scale(1.06);}}
+  .dp-hero h1{position:relative;font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin-bottom:10px;}
+  .dp-hero p{position:relative;font-size:14px;opacity:.9;max-width:420px;margin:0 auto;line-height:1.6;}
+  .dp-hero-badges{position:relative;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px;}
+  .dp-hero-badge{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:6px 14px;font-size:11.5px;font-weight:600;}
+
+  .dp-wrap{max-width:600px;margin:-30px auto 0;padding:0 20px 90px;position:relative;}
+
+  .dp-steps{background:#fff;border:1px solid var(--stone-line);border-radius:14px;padding:18px 20px;margin-bottom:22px;box-shadow:0 8px 24px rgba(13,27,61,.08);}
+  .dp-steps-title{font-size:13px;font-weight:700;margin-bottom:10px;}
+  .dp-step-row{display:flex;gap:10px;font-size:12.5px;color:var(--text-mute);line-height:1.6;margin-bottom:4px;}
+  .dp-step-num{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:#1a3a7a;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+
+  .dp-form{background:#fff;border:1px solid var(--stone-line);border-radius:16px;padding:26px 22px;box-shadow:0 8px 24px rgba(13,27,61,.08);}
+  .dp-section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:#1a3a7a;margin:22px 0 4px;}
+  .dp-section-title:first-child{margin-top:0;}
+  .dp-form label{display:block;font-size:12.5px;font-weight:600;margin:12px 0 4px;}
+  .dp-form input, .dp-form textarea, .dp-form select{width:100%;padding:10px;border:1px solid var(--stone-line);border-radius:7px;font-size:13.5px;font-family:inherit;box-sizing:border-box;background:#fff;}
+  .dp-form textarea{min-height:90px;resize:vertical;}
+  .dp-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .dp-submit{width:100%;background:linear-gradient(135deg,#1a3a7a,#2a5cb8);color:#fff;border:none;border-radius:10px;padding:14px 0;font-size:14.5px;font-weight:700;margin-top:22px;cursor:pointer;}
+  .dp-submit:disabled{opacity:.6;}
+  .dp-status{font-size:12.5px;margin-top:12px;display:none;}
+  .dp-note{font-size:11px;color:var(--text-mute);margin-top:8px;line-height:1.5;}
+
+  .dp-success{display:none;text-align:center;padding:20px 4px 10px;}
+  .dp-success-icon{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#1a3a7a,#2a5cb8);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 10px 24px rgba(26,58,122,.25);}
+  .dp-success h2{font-family:'Fraunces',serif;font-size:20px;font-weight:600;margin-bottom:10px;color:var(--ink);}
+  .dp-success p{font-size:13.5px;color:var(--text-mute);line-height:1.6;max-width:420px;margin:0 auto 6px;}
+  .dp-success .dp-redirect-note{font-size:12px;color:var(--text-mute);margin-top:16px;opacity:.8;}
+</style>
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <div class="dp-hero">
+    <h1>Crée ta boutique sur Golden</h1>
+    <p>Vends tes produits à une audience internationale, avec le sérieux d'une plateforme qui valide et protège chaque boutique.</p>
+    <div class="dp-hero-badges">
+      <span class="dp-hero-badge">✅ Boutiques vérifiées</span>
+      <span class="dp-hero-badge">🌍 Audience internationale</span>
+      <span class="dp-hero-badge">🔒 Accompagnement personnalisé</span>
+    </div>
+  </div>
+
+  <div class="dp-wrap">
+
+    <div class="dp-steps">
+      <div class="dp-steps-title">Comment ça marche</div>
+      <div class="dp-step-row"><span class="dp-step-num">1</span><span>Tu soumets ta candidature ci-dessous</span></div>
+      <div class="dp-step-row"><span class="dp-step-num">2</span><span>On te contacte (rendez-vous, réseaux sociaux ou ici même) pour finaliser le partenariat</span></div>
+      <div class="dp-step-row"><span class="dp-step-num">3</span><span>Une fois le contrat signé, ton espace boutique est activé</span></div>
+    </div>
+
+    <form class="dp-form" id="dp-form">
+
+      <div class="dp-section-title">Ta boutique</div>
+      <label>Nom de ta boutique / entreprise</label>
+      <input id="dp-business" type="text" required placeholder="Ex. Boutique Hk">
+
+      <label>Catégorie principale</label>
+      <select id="dp-category" required>
+        <option value="">Choisis une catégorie...</option>
+        <option value="Mode & Habillement">Mode & Habillement</option>
+        <option value="Électronique">Électronique</option>
+        <option value="Beauté & Cosmétiques">Beauté & Cosmétiques</option>
+        <option value="Alimentation">Alimentation</option>
+        <option value="Maison & Décoration">Maison & Décoration</option>
+        <option value="Artisanat">Artisanat</option>
+        <option value="Autre">Autre</option>
+      </select>
+
+      <label>Que veux-tu vendre sur Golden ?</label>
+      <textarea id="dp-desc" required placeholder="Décris tes produits, ce qui te différencie..."></textarea>
+
+      <label>Site web ou réseau social (optionnel)</label>
+      <input id="dp-website" type="text" placeholder="https:// ou @toncompte">
+
+      <div class="dp-section-title">Localisation</div>
+      <div class="dp-row2">
+        <div>
+          <label>Ville</label>
+          <input id="dp-city" type="text" placeholder="Kinshasa">
+        </div>
+        <div>
+          <label>Pays</label>
+          <input id="dp-country" type="text" placeholder="RD Congo">
+        </div>
+      </div>
+
+      <div class="dp-section-title">Tes coordonnées</div>
+      <label>Ton nom complet</label>
+      <input id="dp-name" type="text" required placeholder="Nom et prénom">
+
+      <label>E-mail</label>
+      <input id="dp-email" type="email" required placeholder="toi@exemple.com">
+      <p class="dp-note">Déjà client Golden ? Utilise la même adresse — ton compte actuel servira aussi pour ta boutique, pas besoin d'en créer un second.</p>
+
+      <label>Téléphone</label>
+      <input id="dp-phone" type="tel" required placeholder="+243...">
+
+      <button type="submit" class="dp-submit">Envoyer ma candidature</button>
+      <p class="dp-status" id="dp-status"></p>
+    </form>
+
+    <div class="dp-success" id="dp-success">
+      <div class="dp-success-icon">✓</div>
+      <h2>Merci pour ta confiance !</h2>
+      <p>Ta candidature a bien été enregistrée. Notre équipe Golden va vérifier tes informations et te répondra sous 24 heures directement à ton adresse e-mail.</p>
+      <p>Merci pour ta fidélité — on a hâte de découvrir ta boutique.</p>
+      <p class="dp-redirect-note">Retour à l'accueil dans quelques secondes...</p>
+    </div>
+  </div>
+
+  <div id="site-footer"></div>
+
+  <script src="translations.js?v=20260809"></script>
+  <script src="script.js?v=20260913c"></script>
+  <script>
+    document.getElementById("dp-form").addEventListener("submit", function(e){
+      e.preventDefault();
+      const business = document.getElementById("dp-business").value.trim();
+      const category = document.getElementById("dp-category").value;
+      const name = document.getElementById("dp-name").value.trim();
+      const email = document.getElementById("dp-email").value.trim();
+      const phone = document.getElementById("dp-phone").value.trim();
+      const desc = document.getElementById("dp-desc").value.trim();
+      const website = document.getElementById("dp-website").value.trim();
+      const city = document.getElementById("dp-city").value.trim();
+      const country = document.getElementById("dp-country").value.trim();
+      const status = document.getElementById("dp-status");
+      const submitBtn = e.target.querySelector(".dp-submit");
+
+      if (!business || !name || !email || !phone || !category || !desc) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Envoi...";
+
+      getVisitorIp().then(function(ip){
+        return fetch("https://tmvkalnetmgcditrpenz.supabase.co/rest/v1/rpc/email_has_shop", {
+          method: "POST",
+          headers: {
+            "apikey": "sb_publishable_jLjHM7CX2J7vSbIzTO0uSg_VECOhgLP",
+            "Authorization": "Bearer sb_publishable_jLjHM7CX2J7vSbIzTO0uSg_VECOhgLP",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ check_email: email })
+        }).then(function(res){ return res.json(); }).then(function(hasShop){
+          if (hasShop === true){
+            throw new Error("Cette adresse est déjà associée à une boutique Golden. Connecte-toi à ton espace partenaire existant plutôt que d'en recréer un nouveau.");
+          }
+          return ip;
+        });
+      }).then(function(ip){
+        return fetch("https://tmvkalnetmgcditrpenz.supabase.co/rest/v1/partenaires_demandes_golden", {
+          method: "POST",
+          headers: {
+            "apikey": "sb_publishable_jLjHM7CX2J7vSbIzTO0uSg_VECOhgLP",
+            "Authorization": "Bearer sb_publishable_jLjHM7CX2J7vSbIzTO0uSg_VECOhgLP",
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+          },
+          body: JSON.stringify({
+            business_name: business,
+            full_name: name,
+            email: email,
+            phone: phone,
+            description: desc,
+            category: category || null,
+            website: website || null,
+            city: city || null,
+            country: country || null,
+            ip_address: ip,
+            user_agent: navigator.userAgent
+          })
+        }).then(function(res){
+          if (!res.ok){
+            return res.json().then(function(data){ throw new Error(data.message || "Erreur d'envoi"); });
+          }
+        });
+      }).then(function(){
+        document.querySelector(".dp-steps").style.display = "none";
+        e.target.style.display = "none";
+        document.getElementById("dp-success").style.display = "block";
+        setTimeout(function(){ window.location.href = "index.html"; }, 5000);
+      }).catch(function(err){
+        status.style.display = "block";
+        status.style.color = "#c85a5a";
+        status.textContent = "❌ Erreur : " + err.message;
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Envoyer ma candidature";
+      });
+    });
+  </script>
+
+</body>
+</html>
