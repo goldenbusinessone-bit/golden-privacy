@@ -16,6 +16,7 @@ function loadGoldenPartials(){
         setupNavToggle();
         setupServicesToggle();
         setupSiteSearch();
+        setupPartnerNavLink();
         renderAccountWidget();
         updateCartBadge();
         if (typeof applyGoldenLanguage === "function" && localStorage.getItem("golden_lang")){
@@ -49,6 +50,20 @@ function markActiveNavLink(){
   document.querySelectorAll(".site-nav a").forEach(function(a){
     if (a.getAttribute("href") === current) a.classList.add("active");
   });
+}
+
+// Le lien du menu principal bascule automatiquement selon que la personne
+// a déjà un espace partenaire actif sur cet appareil ou non.
+function setupPartnerNavLink(){
+  const link = document.getElementById("nav-partner-link");
+  if (!link) return;
+  if (localStorage.getItem("golden_partner_token")){
+    link.textContent = "🏪 Gérer ma boutique";
+    link.href = "espace-partenaire.html";
+  } else {
+    link.textContent = "🏪 Créer une boutique en ligne";
+    link.href = "devenir-partenaire.html";
+  }
 }
 
 function setupNavToggle(){
@@ -503,6 +518,77 @@ function loadReviewWidget(targetType, targetId, containerId){
       }
     })
     .catch(function(err){ console.error("Erreur chargement avis :", err); });
+}
+
+// ============================================================
+// ⚠️ SIGNALEMENTS — réclamation client sur un produit (séparé des avis)
+// Remonte à la fois au partenaire (sa boutique) et à l'admin (vue globale).
+// ============================================================
+function submitReport(productId, partnerName, reason, message){
+  const session = getClientSession();
+  if (!session) return Promise.reject(new Error("Connecte-toi pour signaler un problème."));
+  return clientRequest("signalements_golden", {
+    method: "POST",
+    body: {
+      product_id: productId,
+      partner_name: partnerName || null,
+      client_user_id: session.user.id,
+      client_name: (session.user.user_metadata && session.user.user_metadata.full_name) || null,
+      client_email: session.user.email,
+      reason: reason,
+      message: message || null
+    }
+  });
+}
+
+function loadReportWidget(productId, partnerName, containerId){
+  const box = document.getElementById(containerId);
+  if (!box) return;
+
+  if (!isClientLoggedIn()){
+    box.innerHTML = '<p style="font-size:12.5px;color:var(--text-mute);"><a href="compte.html">Connecte-toi</a> pour signaler un problème avec ce produit.</p>';
+    return;
+  }
+
+  box.innerHTML =
+    '<button type="button" class="btn btn-onlight" id="report-open-btn">Signaler un problème</button>' +
+    '<div id="report-form" style="display:none;margin-top:10px;">' +
+      '<label style="display:block;font-size:12.5px;font-weight:600;margin-bottom:4px;">Nature du problème</label>' +
+      '<select id="report-reason" style="width:100%;padding:8px;border:1px solid var(--stone-line);border-radius:6px;font-size:13px;margin-bottom:8px;">' +
+        '<option value="Produit non reçu">Produit non reçu</option>' +
+        '<option value="Produit non conforme">Produit non conforme à la description</option>' +
+        '<option value="Vendeur injoignable">Vendeur injoignable</option>' +
+        '<option value="Arnaque suspectée">Arnaque suspectée</option>' +
+        '<option value="Autre">Autre</option>' +
+      '</select>' +
+      '<textarea id="report-message" placeholder="Décris ce qui s\'est passé..." style="width:100%;min-height:70px;border:1px solid var(--stone-line);border-radius:6px;padding:8px;font-family:inherit;font-size:13px;"></textarea>' +
+      '<button type="button" class="btn btn-onlight" id="report-submit-btn" style="margin-top:8px;">Envoyer le signalement</button>' +
+      '<p id="report-status" style="font-size:12.5px;margin-top:6px;display:none;"></p>' +
+    '</div>';
+
+  document.getElementById("report-open-btn").addEventListener("click", function(){
+    document.getElementById("report-form").style.display = "block";
+    document.getElementById("report-open-btn").style.display = "none";
+  });
+
+  document.getElementById("report-submit-btn").addEventListener("click", function(){
+    const btn = this;
+    const status = document.getElementById("report-status");
+    const reason = document.getElementById("report-reason").value;
+    const message = document.getElementById("report-message").value.trim();
+    btn.disabled = true;
+    status.style.display = "block";
+    status.style.color = "var(--gold)";
+    status.textContent = "Envoi...";
+    submitReport(productId, partnerName, reason, message).then(function(){
+      status.style.color = "#1a6b45";
+      status.textContent = "✅ Signalement envoyé. Notre équipe va vérifier ça rapidement.";
+    }).catch(function(err){
+      status.style.color = "#c85a5a";
+      status.textContent = "❌ " + err.message;
+      btn.disabled = false;
+    });
+  });
 }
 
 // ============================================================
